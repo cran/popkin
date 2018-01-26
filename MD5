@@ -1,6 +1,6 @@
-2564daf98c7c19d12374e87b25631ca0 *DESCRIPTION
+8c5171e67656c714763822c0f81b6acd *DESCRIPTION
 4dccc6eee1a8be08fbeca01bed27d89d *NAMESPACE
-9d73411bf158d6c888c6bd33644368f5 *NEWS.md
+00972cb20b3f9413be081641de1b6220 *NEWS.md
 197df61ce2f9cd8071f9ff7458a4cbb5 *R/RcppExports.R
 30411647c84c4cbb1b5d9140cc948c52 *R/fst.R
 e87768d1c16d09c88247923b308f997d *R/getA.R
@@ -18,9 +18,9 @@ f8d3ab67c351589f80fb85581d28b421 *R/pwfst.R
 8f5a5ff6ccfb9e63c1a70e4f7cfb9946 *R/weightsSubpops.R
 a264c2d671a57efe5bf7e68f07bc187f *build/vignette.rds
 803b0ec6f046d6d43839fdd69d0f00e1 *inst/CITATION
-0071034e9df8addc020e12a3ceae65eb *inst/doc/popkin.R
-db7aa48859260f7c2c0e53083e484e90 *inst/doc/popkin.Rmd
-9294662d834669e310cd8cf1693fed8d *inst/doc/popkin.pdf
+cf9b984634960505727b7e69ceb8a1c5 *inst/doc/popkin.R
+882778de94c8b22a2f8674f6e8bddcad *inst/doc/popkin.Rmd
+522557560fc6f6e5b4f9717d4c3f6701 *inst/doc/popkin.pdf
 de9d0f865168c760c71d7dcc89f21875 *man/fst.Rd
 f38a5daa2ed2524ea68619544f3da330 *man/inbr.Rd
 b222a2f3957850738b6e402897c31071 *man/inbrDiag.Rd
@@ -41,5 +41,5 @@ fb8b059ff10648b052ee23dff8f69990 *tests/testthat/Xs.bim
 19af04e65ce9d3573cb0b1c6a8c582fa *tests/testthat/test_popkin.R
 72e784099745fff2c32e684b6cbebedb *tests/testthat/test_popkin_BEDMatrix.R
 2eb5fc48fbd7950283a535b9732fc6ed *tests/testthat/test_popkin_fn.R
-db7aa48859260f7c2c0e53083e484e90 *vignettes/popkin.Rmd
+882778de94c8b22a2f8674f6e8bddcad *vignettes/popkin.Rmd
 b1ff4debd2c16d2a273a445c3322100a *vignettes/popkin.bib

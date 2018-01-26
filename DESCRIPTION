@@ -1,6 +1,6 @@
 Package: popkin
 Title: Estimate Kinship and FST under Arbitrary Population Structure
-Version: 1.0.4
+Version: 1.0.5
 Authors@R: c(
 	   person("Alejandro", "Ochoa", email = "ochoa@princeton.edu", role = c("aut", "cre")),
 	   person("John D.", "Storey", email = "jstorey@princeton.edu", role = c("aut"))
@@ -18,9 +18,9 @@ VignetteBuilder: knitr
 URL: https://github.com/StoreyLab/popkin/
 BugReports: https://github.com/StoreyLab/popkin/issues
 NeedsCompilation: yes
-Packaged: 2018-01-13 20:01:21 UTC; viiia
+Packaged: 2018-01-26 17:27:44 UTC; viiia
 Author: Alejandro Ochoa [aut, cre],
   John D. Storey [aut]
 Maintainer: Alejandro Ochoa <ochoa@princeton.edu>
 Repository: CRAN
-Date/Publication: 2018-01-15 12:23:50 UTC
+Date/Publication: 2018-01-26 17:36:50 UTC
