@@ -15,10 +15,12 @@
 #' For example, only the y-axis is labeled under the assumption that the x-axis is the same.
 #' Also, the same subpopulation labels are reproduced on both axes (for clarity).
 #'
-#' @param x A numeric kinship matrix or a list of matrices
+#' @param x A numeric kinship matrix or a list of matrices.  Note \code{x} may contain \code{NULL} elements (makes blank plots with titles; good for placeholders or non-existent data)
 #' @param titles Titles to add to each matrix panel (default is no titles)
-#' @param col Colors for heatmap
-#' @param xMar Margins for each panel (if a list) or for all panels (if a vector).  Margins are in \code{c(bottom,left,top,right)} format that \code{\link[graphics]{par}('mar')} expects.  By default the existing margin values are used without change
+#' @param col Colors for heatmap (default is a red-white-blue palette symmetric about zero constructed using RColorBrewer).
+#' @param colCont If \code{TRUE} then \code{coln} colors will be used in the palette, otherwise (default) only 17 colors are used (those obtained directly from RColorBrewer).  A large value of \code{coln} will give the appearance of continuous colors.
+#' @param coln The number of colors to use in the heatmap if \code{colCont==TRUE}.
+#' @param xMar Margins for each panel (if a list) or for all panels (if a vector).  Margins are in \code{c(bottom,left,top,right)} format that \code{\link[graphics]{par}('mar')} expects.  Note the padding \code{marPad} below is also added to every margin if set.  By default the existing margin values are used without change
 #' @param marPad Margin padding added to all panels (\code{xMar} above and \code{legMar} below).  Default 0.2.  Must be a scalar or a vector of length 4 to match \code{\link[graphics]{par}('mar')}.
 #' @param diagLine If \code{TRUE} adds a line along the diagonal (default no line).  May also be a vector of booleans to set per panel (lengths must agree)
 #' @param panelLetters Vector of strings for labeling panels (default A-Z).  No labels are added when there is only one panel, or if `panelLetters=NULL`
@@ -81,7 +83,7 @@
 #' plotPopkin( inbrDiag(Phi), labs=subpops )
 #'
 #' @export
-plotPopkin <- function(x, titles=NULL, col=NULL, xMar=NULL, marPad=0.2, diagLine=FALSE,
+plotPopkin <- function(x, titles=NULL, col=NULL, colCont=FALSE, coln=100, xMar=NULL, marPad=0.2, diagLine=FALSE,
                        panelLetters=toupper(letters), panelLetterCex=1.5,
                        ylab='Individuals', ylabAdj=NA, ylabLine=0,
                        addLayout=TRUE, nr=1, 
@@ -133,12 +135,16 @@ plotPopkin <- function(x, titles=NULL, col=NULL, xMar=NULL, marPad=0.2, diagLine
         ylabAdj <- repOrDie(ylabAdj, n)
         ylabLine <- repOrDie(ylabLine, n)
     }
+
+    ## figure out which data are non-NULL
+    isNonNull <- !sapply(x, is.null)
+    if (!any(isNonNull)) stop('Fatal: every element of list "x" is NULL!')
     
     ## code needs two versions of the range
     ## - rangeReal is the real range, used in the end so the color key doesn't show values that weren't actually used
     ## - rangeS is a symmetric range, used internally to ensure zero is in the exact middle (set to white in the default)
     ## get range and construct symmetric range that helps with plotting nice colors with white at zero
-    rangeReal <- range( unlist(lapply(x, range, na.rm=TRUE)) )  # range of all data plotted
+    rangeReal <- range( unlist(lapply(x[isNonNull], range, na.rm=TRUE)) )  # range of all non-NULL data plotted
     ## these next few lines force symmetry for colors (might look better, not sure)
     maxS <- max(abs(rangeReal))
     rangeS <- c(-maxS, maxS)
@@ -149,11 +155,13 @@ plotPopkin <- function(x, titles=NULL, col=NULL, xMar=NULL, marPad=0.2, diagLine
     marPre <- graphics::par('mar') # save original margins, in case there are changes
     
     ## breaks of all following plots should match!
+    breaks <- NULL
     for (i in 1:n) {
         if (!is.null(xMar[[i]])) {
             graphics::par(mar=xMar[[i]]+marPad) # change margins if necessary!
         }
-        breaks <- plotPopkinSingle(x[[i]], xRange=rangeS, col=col, showNames=showNames[i], namesCex=namesCex[i], namesLine=namesLine[i], labs=labs[[i]], labsCex=labsCex[[i]], labsLas=labsLas[[i]], labsLine=labsLine[[i]], labsLwd=labsLwd[[i]], labsSkipLines=labsSkipLines[[i]], labsDoTicks=labsDoTicks[[i]], labsDoText=labsDoText[[i]], labsCol=labsCol[[i]], labsEven=labsEven[[i]], diagLine=diagLine[i], main=titles[i], ...)
+        breaksi <- plotPopkinSingle(x[[i]], xRange=rangeS, col=col, colCont=colCont, coln=coln, showNames=showNames[i], namesCex=namesCex[i], namesLine=namesLine[i], labs=labs[[i]], labsCex=labsCex[[i]], labsLas=labsLas[[i]], labsLine=labsLine[[i]], labsLwd=labsLwd[[i]], labsSkipLines=labsSkipLines[[i]], labsDoTicks=labsDoTicks[[i]], labsDoText=labsDoText[[i]], labsCol=labsCol[[i]], labsEven=labsEven[[i]], diagLine=diagLine[i], main=titles[i], ...)
+        if (!is.null(breaksi)) breaks <- breaksi # don't overwrite for non-data x[[i]] cases
         ## add ylab for every panel when there is more than one choice, and provided it was non-NA
         ## uses inner rather than outer margin (only choice that makes sense)
         if (length(ylab) > 1 && !is.na(ylab[i])) 
@@ -173,7 +181,7 @@ plotPopkin <- function(x, titles=NULL, col=NULL, xMar=NULL, marPad=0.2, diagLine
         marTmp[2] <- marPad # replace left margin with zero plus pad
         graphics::par(mar=marTmp) # update margins for legend only!
     }
-    heatLegImage(breaks, xRange=rangeReal, varname=legTitle, col=col, nPretty=nPretty)
+    heatLegImage(breaks, xRange=rangeReal, varname=legTitle, col=col, colCont=colCont, coln=coln, nPretty=nPretty)
 
     ## add margin only once if there was only one, place in outer margin (only choice that makes sense)
     if (length(ylab) == 1) {
@@ -183,11 +191,19 @@ plotPopkin <- function(x, titles=NULL, col=NULL, xMar=NULL, marPad=0.2, diagLine
     graphics::par(mar=marPre) # restore margins!
 }
 
-plotPopkinSingle <- function (x, xRange=range(x, na.rm=TRUE), col=NULL, showNames=FALSE, namesCex=1, namesLine=NA, xlab = "", ylab = "", labs=NULL, labsCex=1, labsLas=0, labsLine=0, labsLwd=1, labsSkipLines=FALSE, labsDoTicks=FALSE, labsDoText=TRUE, labsCol='black', labsEven=FALSE, diagLine=FALSE, ...) {
+plotPopkinSingle <- function (x=NULL, xRange=range(x, na.rm=TRUE), col=NULL, colCont=FALSE, coln=100, showNames=FALSE, namesCex=1, namesLine=NA, xlab = "", ylab = "", labs=NULL, labsCex=1, labsLas=0, labsLine=0, labsLwd=1, labsSkipLines=FALSE, labsDoTicks=FALSE, labsDoText=TRUE, labsCol='black', labsEven=FALSE, diagLine=FALSE, ...) {
     ## this "raw" version does not plot legend or set margins, best for optimized scenarios...
+
+    ## shortcut when there's no data to plot (placeholders)
+    ## let's still start a new plot with a title, nothing else gets added
+    if (is.null(x)) {
+        graphics::plot.new() # new blank figure
+        graphics::title(...) # this works?
+        return(NULL) # return null breaks in this case only!
+    }
     
     ## data validation
-    if (is.null(col)) col <- palPopkin() # default coloring
+    if (is.null(col)) col <- palPopkin(cont=colCont, n=coln) # default coloring
     if (length(col) == 1 && is.character(col)) 
         col <- get(col, mode = "function")
     if (length(dim(x)) != 2)  #  || !is.numeric(x)
@@ -326,12 +342,12 @@ repOrDieList <- function(vals, n) {
 ## mtext('Individuals', side=2, outer=TRUE)
 ##
 ## @export
-heatLegImage <- function(breaks, xRange, varname='Kinship', col=NULL, nPretty=5) {
+heatLegImage <- function(breaks, xRange=NULL, varname='Kinship', col=NULL, colCont=FALSE, coln=100, nPretty=5) {
     ## creates a nicer heatmap legend, but it has to be a standalone image (in its own panel, preferably through layout so it's a skinny panel)
     ## this function fills panel, so here we don't set margins/etc (it's best left to the end user)
 
-    if (is.null(col)) col <- palPopkin() # default coloring
-    if (!missing(xRange)) {
+    if (is.null(col)) col <- palPopkin(cont=colCont, n=coln) # default coloring
+    if (!is.null(xRange)) {
         ## here's a case where we only want to plot things within an altered range than that of breaks/col
         ## expected application is xRange is real data range, while breaks/col are rigged to be wider (particularly because we forced them to be symmetric, and have a white color at zero)
         ## so we'll proceed by assuming xRange is contained in breaks, but we might want to remove breaks and colors with them
@@ -349,7 +365,7 @@ heatLegImage <- function(breaks, xRange, varname='Kinship', col=NULL, nPretty=5)
     ## NOTE: breaks[2:length(breaks)] plots the sequence of colors because (from ?image):
     ## > intervals are closed on the right and open on the left except for the lowest interval which is closed at both ends.
     ## so plotting all top values of breaks works!
-    graphics::image(z = matrix(breaks[2:nb], nrow = 1), col = col, breaks = breaks, xaxt = "n", yaxt = "n")
+    graphics::image(z = matrix(breaks[2:nb], nrow = 1), col = col, breaks = breaks, xaxt = "n", yaxt = "n", useRaster=TRUE)
 
     ## now we should add axis numbers/ticks
     ## this is a real pain, because 0 and 1 are in the middle of the first and last boxes
@@ -394,13 +410,22 @@ plotPopkinLayout <- function(n, nr) {
     graphics::layout(layoutMat, widths=layoutWidths) # note rows are all equal height
 }
 
-## make internal function?
-palPopkin <- function() {
+## internal function
+palPopkin <- function(cont=FALSE, n=100) {
+    # NOTE: n=100 gets triggered only when cont==TRUE
     ##hmcolBR <- rev(RColorBrewer::brewer.pal(11,"RdBu"))
     hmcolR <- RColorBrewer::brewer.pal(9,"Reds")
     hmcolB <- rev(RColorBrewer::brewer.pal(9,"Blues"))
     ## create a hybrid...
     hmcolBR <- c(hmcolB[1:8], hmcolR)
+    ## now interpolate if needed
+    if (cont) {
+        # first step creates a new function that performs the mapping
+        hmcolBRfun <- grDevices::colorRampPalette(hmcolBR)
+        # second step actually creates new palette with n colors
+        hmcolBR <- hmcolBRfun(n) # overwrite initial palette
+    }
+    return(hmcolBR)
 }
 
 boundaryLabs <- function(labs) {
@@ -444,7 +469,7 @@ panelLetter <- function(letter, cex=1.5, line=0.5, adj=0) {
     graphics::mtext(letter, cex=cex, line=line, adj=adj)
 }
 
-printLabs <- function(labs, x, doMat=TRUE, cex=1, las=0, lwd=1, skipLines=FALSE, doTicks=FALSE, even=FALSE, line=0, doText=TRUE, col='black') {
+printLabs <- function(labs, x=NULL, doMat=TRUE, cex=1, las=0, lwd=1, skipLines=FALSE, doTicks=FALSE, even=FALSE, line=0, doText=TRUE, col='black', side1=1, side2=2) {
     labsObj <- boundaryLabs(labs)
     ## extract the data (smaller var names)
     l <- labsObj$labels
@@ -452,7 +477,7 @@ printLabs <- function(labs, x, doMat=TRUE, cex=1, las=0, lwd=1, skipLines=FALSE,
     n <- length(l) # number of labels (or number of boundaries minus one)
     m <- max(b) # number of individuals plus 1 (usually n+1, but here I messed up notation above, meh)
     ## for non-barplots, the sensible default is to use the indexes as coordinates (or do they have to be normalized?)
-    if (missing(x)) {
+    if (is.null(x)) {
         x <- 1:m
     } else {
         ## a hack necessary for barplots at least
@@ -511,8 +536,8 @@ printLabs <- function(labs, x, doMat=TRUE, cex=1, las=0, lwd=1, skipLines=FALSE,
     
     if (doText) { # can skip if doText==FALSE
         ## place labels at "y" (set according to "even=TRUE" or otherwise)
-        graphics::mtext(l, side=1, at=y, cex=cex, las=las, line=line)
+        graphics::mtext(l, side=side1, at=y, cex=cex, las=las, line=line)
         ## for matrices, do both ways!
-        if (doMat) graphics::mtext(l, side=2, at=xMax-y, cex=cex, las=las, line=line)
+        if (doMat) graphics::mtext(l, side=side2, at=xMax-y, cex=cex, las=las, line=line)
     }
 }

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="author" content="Alejandro Ochoa and John D. Storey" />
+
+<meta name="date" content="2019-02-13" />
+
+<title>Estimate Kinship and F_{\text{ST}} under Arbitrary Population Structure with popkin</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; position: absolute; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; }
+pre.numberSource a.sourceLine:empty
+  { position: absolute; }
+pre.numberSource a.sourceLine::before
+  { content: attr(data-line-number);
+    position: absolute; left: -5em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#header {
+text-align: center;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Estimate Kinship and <span class="math inline">\(F_{\text{ST}}\)</span> under Arbitrary Population Structure with <code>popkin</code></h1>
+<h4 class="author"><em>Alejandro Ochoa and John D. Storey</em></h4>
+<h4 class="date"><em>2019-02-13</em></h4>
+
+
+
+<!-- Weird way to include these definitions for HTML Markdown -->
+<p><span class="math display">\[
+\newcommand{\Fst}{F_{\text{ST}}}
+\newcommand{\ft}[1][j]{f_{#1}^T}
+\newcommand{\kt}[1][k]{\varphi_{j#1}^T}
+\]</span></p>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>The <code>popkin</code> (“population kinship”) package estimates the kinship matrix of individuals and <span class="math inline">\(\Fst\)</span> from their biallelic genotypes. Our estimation framework is the first to be practically unbiased under arbitrary population structures <span class="citation">(Ochoa and Storey 2016a, 2016b)</span>. Here we briefly summarize the notation and intuition behind the key parameters.</p>
+<div id="kinship-and-inbreeding-coefficients" class="section level2">
+<h2>Kinship and inbreeding coefficients</h2>
+<p>Kinship and inbreeding coefficients are probabilities of “identity by descent” (IBD) carefully defined elsewhere <span class="citation">(Ochoa and Storey 2016a, 2016b)</span>. The reference ancestral population <span class="math inline">\(T\)</span> sets the level of relatedness treated as zero (as demonstrated in the sample usage section below). <span class="math inline">\(\ft\)</span> is the inbreeding coefficient of individual <span class="math inline">\(j\)</span> when <span class="math inline">\(T\)</span> is the ancestral population, and <span class="math inline">\(\kt\)</span> is the kinship coefficient of the pair individuals <span class="math inline">\(j,k\)</span> when <span class="math inline">\(T\)</span> is the ancestral population. In a structured population we expect most <span class="math inline">\(\ft,\kt &gt;0\)</span>. If <span class="math inline">\(j,k\)</span> are the parents of <span class="math inline">\(l\)</span> then <span class="math inline">\(\ft[l] = \kt\)</span>, so within a panmictic subpopulation we expect <span class="math inline">\(\ft \approx \kt\)</span> for <span class="math inline">\(j \ne k\)</span>. The “self-kinship” <span class="math inline">\(j=k\)</span> case equals <span class="math inline">\(\kt[j] = \frac{1}{2}\left( 1+\ft \right)\)</span> rather than <span class="math inline">\(\ft\)</span>.</p>
+<p>Let <span class="math inline">\(\Phi^T = (\kt)\)</span> be the <span class="math inline">\(n \times n\)</span> matrix that contains all kinship coefficients of all individuals in a dataset. The ancestral population <span class="math inline">\(T\)</span> is the most recent common ancestor (MRCA) population if and only if <span class="math inline">\(\min \kt = 0\)</span>, assuming such unrelated pairs of individuals exist in the dataset. Thus, the only role <span class="math inline">\(T\)</span> plays in our estimates is determining the level of relatedness that is treated as zero.</p>
+<p>Note that the diagonal of our estimated <span class="math inline">\(\Phi^T\)</span> contains <span class="math inline">\(\kt[j]\)</span> values rather than <span class="math inline">\(\ft\)</span>, which is required for statistical modeling applications; however, <span class="math inline">\(\kt[j]\)</span> tends to take on much greater values than <span class="math inline">\(\kt\)</span> for <span class="math inline">\(j \ne k\)</span>, while <span class="math inline">\(\ft \approx \kt\)</span> for <span class="math inline">\(j \ne k\)</span> within panmictic subpopulations (see above), so for visualization we strongly recommend replacing the diagonal of <span class="math inline">\(\Phi^T\)</span> with <span class="math inline">\(\ft\)</span> values.</p>
+</div>
+<div id="the-generalized-fst" class="section level2">
+<h2>The generalized <span class="math inline">\(\Fst\)</span></h2>
+<p><span class="math inline">\(\Fst\)</span> is also an IBD probability that equals the mean inbreeding coefficients in a population partitioned into homogeneous subpopulations. We recently generalized the <span class="math inline">\(\Fst\)</span> definition to arbitrary population structures—dropping the need for subpopulations—and generalized the partition of “total” inbreeding into “local” inbreeding (due to having unusually closely related parents) and “structural” inbreeding (due to the population structure) <span class="citation">(Ochoa and Storey 2016a)</span>. The current <code>popkin</code> estimates the total kinship matrix <span class="math inline">\(\Phi^T\)</span> only; in the future, <code>popkin</code> will also extract the structural kinship matrix. However, when all individuals are “locally outbred”—the most common case in population data—<span class="math inline">\(\Fst\)</span> is simply the weighted mean inbreeding coefficient: <span class="math display">\[
+\Fst = \sum_{j=1}^n w_j \ft,
+\]</span> where <span class="math inline">\(0&lt;w_j&lt;1,\sum_{j=1}^n w_j =1\)</span> are weights for individuals intended to help users balance skewed samples (i.e. if there are subpopulations with much greater sample sizes than others). The current <code>popkin</code> version assumes all individuals are locally outbred in estimating <span class="math inline">\(\Fst\)</span>.</p>
+</div>
+<div id="the-individual-level-pairwise-fst" class="section level2">
+<h2>The individual-level pairwise <span class="math inline">\(\Fst\)</span></h2>
+<p>Another quantity of interest is the individual-level pairwise <span class="math inline">\(\Fst\)</span>, which generalize the <span class="math inline">\(\Fst\)</span> between two populations to pairs of individuals. Here each comparison between two individuals has a different ancestral population, namely the MRCA population of the two individuals. When individuals are again locally outbred and also locally unrelated, the pairwise <span class="math inline">\(\Fst\)</span> is given in terms of the inbreeding and kinship coefficients <span class="citation">(Ochoa and Storey 2016a)</span>: <span class="math display">\[
+F_{jk} = \frac{\frac{\ft+\ft[k]}{2}-\kt}{1-\kt}.
+\]</span> The <code>popkin</code> package also provides an estimator of the pairwise <span class="math inline">\(\Fst\)</span> matrix (containing <span class="math inline">\(F_{jk}\)</span> estimates between every pair of individuals).</p>
+</div>
+</div>
+<div id="sample-usage" class="section level1">
+<h1>Sample usage</h1>
+<div id="input-genotype-data" class="section level2">
+<h2>Input genotype data</h2>
+<p>The <code>popkin</code> function accepts biallelic genotype matrices in three forms:</p>
+<ol style="list-style-type: decimal">
+<li><p>A genotype matrix <code>X</code> with values in <code>c(0,1,2,NA)</code> only. It is preferable, though not necessary, for <code>X</code> to be an integer matrix (with values in <code>c(0L,1L,2L,NA)</code> only, see <code>?storage.mode</code>). This standard encoding for biallelic SNPs counts reference alleles: 2 is homozygous for the reference allele, 0 is homozygous for the alternative allele, 1 is heterozygous, and NA is missing data. Which allele is the reference does not matter: <code>popkin</code> estimates the same kinship and <span class="math inline">\(\Fst\)</span> for <code>X</code> and <code>2-X</code>. By default <code>popkin</code> expects loci along rows and individuals along columns (an <span class="math inline">\(m \times n\)</span> matrix); a transposed <code>X</code> is handled best by also setting <code>lociOnCols=TRUE</code>.</p></li>
+<li>BED-formatted data loaded with the <code>BEDMatrix</code> package, which <code>popkin</code> uses to keep memory usage low. For example, load <code>myData.bed</code>, <code>myData.bim</code>, <code>myData.fam</code> using:</li>
+</ol>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(BEDMatrix)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">X &lt;-<span class="st"> </span><span class="kw">BEDMatrix</span>(<span class="st">'myData'</span>) <span class="co"># note: excluding extension is ok</span></a></code></pre></div>
+<p>This <code>BEDMatrix</code> object is not a regular matrix but <code>popkin</code> handles it correctly. Other genotype formats can be converted into BED using <a href="https://www.cog-genomics.org/plink2">plink2</a> or other software.</p>
+<ol style="list-style-type: decimal">
+<li>A function <code>X(m)</code> that when called loads the next <span class="math inline">\(m\)</span> SNPs of the data, returning an <span class="math inline">\(m \times n\)</span> matrix in the format of Case 1 above. This option allows direct and memory-efficient processing of large non-BED data, but should be the last resort since users must write their own functions <code>X(m)</code> for their custom formats. Try first converting your data to BED and loading with <code>BEDMatrix</code>.</li>
+</ol>
+</div>
+<div id="load-and-clean-sample-data" class="section level2">
+<h2>Load and clean sample data</h2>
+<p>For illustration, let’s load the real human data worldwide sample (“HGDP subset”) contained in the <code>lfa</code> package:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">library</span>(popkin)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2"><span class="kw">library</span>(lfa) <span class="co"># for hgdp_subset sample data only</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">X &lt;-<span class="st"> </span>hgdp_subset <span class="co"># rename for simplicity</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw">dim</span>(X)</a></code></pre></div>
+<p>This data has <span class="math inline">\(m=NA\)</span> <!-- exists test needed for when "lfa" is unavailable at CRAN servers... --> loci and <span class="math inline">\(n=NA\)</span> <!-- exists test needed for when "lfa" is unavailable at CRAN servers... --> individuals, and is oriented as <code>popkin</code> expects by default. These samples have labels grouping them by continental subpopulation in <code>colnames(X)</code>. To make visualizations easier later on, let’s shorten these labels and reorder to have nice blocks:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1"><span class="co"># shorten subpopulation labels</span></a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'AFRICA'</span>] &lt;-<span class="st"> 'AFR'</span></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'MIDDLE_EAST'</span>] &lt;-<span class="st"> 'MDE'</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'EUROPE'</span>] &lt;-<span class="st"> 'EUR'</span></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'CENTRAL_SOUTH_ASIA'</span>] &lt;-<span class="st"> 'SAS'</span></a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'EAST_ASIA'</span>] &lt;-<span class="st"> 'EAS'</span></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'OCEANIA'</span>] &lt;-<span class="st"> 'OCE'</span></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="kw">colnames</span>(X)[<span class="kw">colnames</span>(X)<span class="op">==</span><span class="st">'AMERICA'</span>] &lt;-<span class="st"> 'AMR'</span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"><span class="co"># order roughly by distance from Africa</span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">popOrder &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">'AFR'</span>, <span class="st">'MDE'</span>, <span class="st">'EUR'</span>, <span class="st">'SAS'</span>, <span class="st">'EAS'</span>, <span class="st">'OCE'</span>, <span class="st">'AMR'</span>)</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11"><span class="co"># applies reordering</span></a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">X &lt;-<span class="st"> </span>X[,<span class="kw">order</span>(<span class="kw">match</span>(<span class="kw">colnames</span>(X), popOrder))]</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">subpops &lt;-<span class="st"> </span><span class="kw">colnames</span>(X) <span class="co"># extract subpopulations vector</span></a></code></pre></div>
+<p>Here’s a quick view of the top left corner of the matrix <code>X</code> with values in 0, 1, 2, and NA (this example has no missing values, but <code>popkin</code> handles them too). This matrix does not preserve the identity of the reference or alternative alleles, but this distinction does not matter for estimating kinship and <span class="math inline">\(\Fst\)</span>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">X[<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>,<span class="dv">1</span><span class="op">:</span><span class="dv">15</span>]</a></code></pre></div>
+<p>Now we’re ready to analyze this data with <code>popkin</code>!</p>
+</div>
+<div id="estimate-and-visualize-kinship-using-genotypes-and-subpopulations" class="section level2">
+<h2>Estimate and visualize kinship using genotypes and subpopulations</h2>
+<p>Estimating a kinship matrix requires the genotype matrix <code>X</code> and subpopulation levels used only to estimate the minimum level of kinship. Using the <code>lfa</code> sample data we cleaned in the last subsection, obtaining the estimate is simple:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">Phi &lt;-<span class="st"> </span><span class="kw">popkin</span>(X, subpops)</a></code></pre></div>
+<p>Now let’s visualize the raw kinship matrix estimate:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co"># set outer margin for axis labels (left and right are non-zero)</span></a>
+<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co"># set inner margin for subpopulation labels (bottom and left are non-zero), add padding</span></a>
+<a class="sourceLine" id="cb6-4" data-line-number="4"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="co"># now plot!</span></a>
+<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="kw">plotPopkin</span>(Phi, <span class="dt">labs=</span>subpops)</a></code></pre></div>
+<p>Ignoring the overlapping labels for a moment, this plot shows that self-kinship (the diagonal) is much greater than kinship between different individuals (min <span class="math inline">\(\kt[j] \ge 0.5\)</span>). It makes more sense to plot inbreeding (<span class="math inline">\(\ft\)</span>) values on the diagonal (they are on the same scale as <span class="math inline">\(\kt\)</span> for <span class="math inline">\(j \ne k\)</span>), which is achieved using <code>inbrDiag</code>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="kw">plotPopkin</span>(<span class="kw">inbrDiag</span>(Phi), <span class="dt">labs=</span>subpops)</a></code></pre></div>
+<p>Now let’s tweak the plot. We improve the labeling by setting <code>labsEven=TRUE</code>, which arranges the subpopulation labels with equal spacing and adds lines that map to their blocks. To see these new lines, we must move these labels further from the heatmap by setting <code>labsLine=1</code>. We shrink the labels with <code>labsCex=0.7</code>.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb8-2" data-line-number="2"><span class="co"># increase margins because labels go farther out</span></a>
+<a class="sourceLine" id="cb8-3" data-line-number="3"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"><span class="kw">plotPopkin</span>(<span class="kw">inbrDiag</span>(Phi), <span class="dt">labs=</span>subpops, <span class="dt">labsEven=</span><span class="ot">TRUE</span>, <span class="dt">labsLine=</span><span class="dv">1</span>, <span class="dt">labsCex=</span><span class="fl">0.7</span>)</a></code></pre></div>
+<p>This figure clearly shows the population structure of these worldwide samples, with block patterns that are coherent with serial founder effects in the dispersal of humans out of Africa. Since only <span class="math inline">\(m=5000\)</span> SNPs are included in this sample, the estimates are noisier than in more complete data (datasets routinely have over 300K SNPs).</p>
+<p>This figure also illustrates how subpopulations are used to estimate kinship by <code>popkin</code>: they only set the zero kinship as the mean kinship between the two most distant populations, which in this case are AFR and AMR.</p>
+</div>
+<div id="estimate-fst-and-individual-inbreeding-from-a-kinship-matrix" class="section level2">
+<h2>Estimate <span class="math inline">\(\Fst\)</span> and individual inbreeding from a kinship matrix</h2>
+<p>Since <span class="math inline">\(\Fst\)</span> is the weighted mean of the inbreeding coefficients, and since some subpopulations are overrepresented in this data (EAS is much larger than the rest), it makes sense to use weights that balance these subpopulations:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="co"># get weights</span></a>
+<a class="sourceLine" id="cb9-2" data-line-number="2">w &lt;-<span class="st"> </span><span class="kw">weightsSubpops</span>(subpops)</a>
+<a class="sourceLine" id="cb9-3" data-line-number="3"><span class="co"># compute FST!</span></a>
+<a class="sourceLine" id="cb9-4" data-line-number="4"><span class="co"># Note: don't use the output to inbrDiag(Phi) or FST will be wrong!</span></a>
+<a class="sourceLine" id="cb9-5" data-line-number="5"><span class="kw">fst</span>(Phi, w)</a></code></pre></div>
+<p>If you compare these estimates to those we obtained for Human Origins <span class="citation">(Ochoa and Storey 2016a)</span>, you’ll notice things look a bit different: here <span class="math inline">\(\Fst\)</span> is smaller and the kinship within AFR is relatively much higher than within EUR or EAS. Besides containing many fewer SNPs, the SNPs in this HGDP sample were likely biased for common variants in Europeans, which might explain the difference.</p>
+<p>We can also extract the vector of inbreeding coefficients from the kinship matrix using <code>inbr</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">inbrs &lt;-<span class="st"> </span><span class="kw">inbr</span>(Phi) <span class="co"># vector of inbreeding coefficients</span></a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"><span class="co"># quick plot</span></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">0</span>, <span class="fl">0.2</span>) <span class="op">+</span><span class="st"> </span><span class="fl">0.2</span>) <span class="co"># adjust margins</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="kw">plot</span>(<span class="kw">density</span>(inbrs), <span class="dt">xlab=</span><span class="st">'inbreeding coefficient'</span>, <span class="dt">main=</span><span class="st">''</span>) <span class="co"># see their distribution</span></a></code></pre></div>
+</div>
+<div id="estimate-individual-level-pairwise-fst-matrix-from-a-kinship-matrix" class="section level2">
+<h2>Estimate individual-level pairwise <span class="math inline">\(\Fst\)</span> matrix from a kinship matrix</h2>
+<p>We calculate individual-level pairwise <span class="math inline">\(\Fst\)</span> estimates from the previous kinship estimates using <code>pwfst</code>. Note that the pairwise <span class="math inline">\(\Fst\)</span> is a distance between pairs of individuals: approximately zero for individuals in the same population, and increasing for more distant pairs of individuals.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">pwF &lt;-<span class="st"> </span><span class="kw">pwfst</span>(Phi) <span class="co"># compute pairwise FST matrix from kinship matrix</span></a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">legTitle &lt;-<span class="st"> </span><span class="kw">expression</span>(<span class="kw">paste</span>(<span class="st">'Pairwise '</span>, F[ST])) <span class="co"># fancy legend label</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>,<span class="fl">0.2</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="co"># </span><span class="al">NOTE</span><span class="co"> no need for inbrDiag() here!</span></a>
+<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="kw">plotPopkin</span>(pwF, <span class="dt">labs=</span>subpops, <span class="dt">labsEven=</span><span class="ot">TRUE</span>, <span class="dt">labsLine=</span><span class="dv">1</span>, <span class="dt">labsCex=</span><span class="fl">0.7</span>, <span class="dt">legTitle=</span>legTitle)</a></code></pre></div>
+</div>
+<div id="rescale-kinship-matrix-in-a-subset-of-the-data" class="section level2">
+<h2>Rescale kinship matrix in a subset of the data</h2>
+<p>Suppose now you’re interested in one subpopulation, say AFR:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">indexesAfr &lt;-<span class="st"> </span>subpops <span class="op">==</span><span class="st"> 'AFR'</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2"><span class="co"># AFR subset of the kinship matrix</span></a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">PhiAfr &lt;-<span class="st"> </span>Phi[indexesAfr,indexesAfr]</a>
+<a class="sourceLine" id="cb12-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb12-5" data-line-number="5"><span class="co"># kinship matrix plot</span></a>
+<a class="sourceLine" id="cb12-6" data-line-number="6"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>) <span class="co"># zero margins for no labels</span></a>
+<a class="sourceLine" id="cb12-8" data-line-number="8"><span class="kw">plotPopkin</span>(<span class="kw">inbrDiag</span>(PhiAfr))</a>
+<a class="sourceLine" id="cb12-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb12-10" data-line-number="10"><span class="co"># estimate FST before rescaling (this value will be wrong, too high!)</span></a>
+<a class="sourceLine" id="cb12-11" data-line-number="11"><span class="kw">fst</span>(PhiAfr)</a></code></pre></div>
+<p>Removing populations changes the MRCA population <span class="math inline">\(T\)</span>, drastically in this case (the reason the minimum kinship is so large and the within-AFR <span class="math inline">\(\Fst\)</span> above is wrong). To ensure the minimum kinship is zero, instead of re-estimate the kinship matrix from the subset genotypes, it suffices to rescale the given kinship matrix with <code>rescalePopkin</code>!</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" data-line-number="1"><span class="co"># rescale PhiAfr</span></a>
+<a class="sourceLine" id="cb13-2" data-line-number="2"><span class="co"># since subpops is missing, minimum Phi value is set to zero</span></a>
+<a class="sourceLine" id="cb13-3" data-line-number="3"><span class="co"># (no averaging between subpopulations)</span></a>
+<a class="sourceLine" id="cb13-4" data-line-number="4">PhiAfr &lt;-<span class="st"> </span><span class="kw">rescalePopkin</span>(PhiAfr)</a>
+<a class="sourceLine" id="cb13-5" data-line-number="5"></a>
+<a class="sourceLine" id="cb13-6" data-line-number="6"><span class="co"># kinship matrix plot</span></a>
+<a class="sourceLine" id="cb13-7" data-line-number="7"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb13-8" data-line-number="8"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>) <span class="co"># zero margins for no labels</span></a>
+<a class="sourceLine" id="cb13-9" data-line-number="9"><span class="kw">plotPopkin</span>(<span class="kw">inbrDiag</span>(PhiAfr))</a>
+<a class="sourceLine" id="cb13-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb13-11" data-line-number="11"><span class="co"># FST is now correct, relative to the MRCA of AFR individuals</span></a>
+<a class="sourceLine" id="cb13-12" data-line-number="12"><span class="kw">fst</span>(PhiAfr)</a></code></pre></div>
+<p>There is clear substructure within Sub-Saharan Africa, but this sample data does not have more detailed labels that could help us interpret further.</p>
+</div>
+<div id="plot-multiple-kinship-matrices-together" class="section level2">
+<h2>Plot multiple kinship matrices together</h2>
+<p>As a final example, we plot the global <code>Phi</code> and the rescaled AFR subset <code>PhiAfr</code> side-by-side, illustrating how more than one kinship matrix can be plotted with a shared legend.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" data-line-number="1"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb14-2" data-line-number="2"><span class="co"># increase top margin for titles</span></a>
+<a class="sourceLine" id="cb14-3" data-line-number="3"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb14-4" data-line-number="4"><span class="co"># dummy labels to have lines in second panel</span></a>
+<a class="sourceLine" id="cb14-5" data-line-number="5">subpopsAfr &lt;-<span class="st"> </span>subpops[indexesAfr]</a>
+<a class="sourceLine" id="cb14-6" data-line-number="6"><span class="kw">plotPopkin</span>(</a>
+<a class="sourceLine" id="cb14-7" data-line-number="7">    <span class="kw">list</span>(<span class="kw">inbrDiag</span>(Phi), <span class="kw">inbrDiag</span>(PhiAfr)), <span class="co"># list of matrices</span></a>
+<a class="sourceLine" id="cb14-8" data-line-number="8">    <span class="dt">titles=</span><span class="kw">c</span>(<span class="st">'All'</span>, <span class="st">'AFR only, rescaled'</span>), <span class="co"># title of each panel</span></a>
+<a class="sourceLine" id="cb14-9" data-line-number="9">    <span class="dt">labs=</span><span class="kw">list</span>(subpops, subpopsAfr), <span class="co"># pass per-panel labels using a list</span></a>
+<a class="sourceLine" id="cb14-10" data-line-number="10">    <span class="dt">labsEven=</span><span class="ot">TRUE</span>, <span class="co"># scalar options are shared across panels</span></a>
+<a class="sourceLine" id="cb14-11" data-line-number="11">    <span class="dt">labsLine=</span><span class="dv">1</span>,</a>
+<a class="sourceLine" id="cb14-12" data-line-number="12">    <span class="dt">labsCex=</span><span class="fl">0.5</span></a>
+<a class="sourceLine" id="cb14-13" data-line-number="13">    )</a></code></pre></div>
+</div>
+<div id="plot-kinship-matrices-with-multiple-levels-of-labels" class="section level2">
+<h2>Plot kinship matrices with multiple levels of labels</h2>
+<p>The <code>plotPopkin</code> function has advanced options for plotting more than one level of labels. For this example, we will highlight the three “blocks” that represent the first two splits in the human migration out of Africa:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" data-line-number="1"><span class="co"># create second level of labels</span></a>
+<a class="sourceLine" id="cb15-2" data-line-number="2"><span class="co"># first copy first-level labels</span></a>
+<a class="sourceLine" id="cb15-3" data-line-number="3">blocks &lt;-<span class="st"> </span>subpops</a>
+<a class="sourceLine" id="cb15-4" data-line-number="4"><span class="co"># first block is AFR</span></a>
+<a class="sourceLine" id="cb15-5" data-line-number="5">blocks[blocks<span class="op">==</span><span class="st">'AFR'</span>] &lt;-<span class="st"> 'B1'</span></a>
+<a class="sourceLine" id="cb15-6" data-line-number="6"><span class="co"># second block is West Eurasians, broadly defined</span></a>
+<a class="sourceLine" id="cb15-7" data-line-number="7">blocks[blocks<span class="op">==</span><span class="st">'MDE'</span>] &lt;-<span class="st"> 'B2'</span></a>
+<a class="sourceLine" id="cb15-8" data-line-number="8">blocks[blocks<span class="op">==</span><span class="st">'EUR'</span>] &lt;-<span class="st"> 'B2'</span></a>
+<a class="sourceLine" id="cb15-9" data-line-number="9">blocks[blocks<span class="op">==</span><span class="st">'SAS'</span>] &lt;-<span class="st"> 'B2'</span></a>
+<a class="sourceLine" id="cb15-10" data-line-number="10"><span class="co"># third block is East Eurasians, broadly defined</span></a>
+<a class="sourceLine" id="cb15-11" data-line-number="11">blocks[blocks<span class="op">==</span><span class="st">'EAS'</span>] &lt;-<span class="st"> 'B3'</span></a>
+<a class="sourceLine" id="cb15-12" data-line-number="12">blocks[blocks<span class="op">==</span><span class="st">'OCE'</span>] &lt;-<span class="st"> 'B3'</span></a>
+<a class="sourceLine" id="cb15-13" data-line-number="13">blocks[blocks<span class="op">==</span><span class="st">'AMR'</span>] &lt;-<span class="st"> 'B3'</span></a>
+<a class="sourceLine" id="cb15-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb15-15" data-line-number="15"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb15-16" data-line-number="16"><span class="co"># increase margins again</span></a>
+<a class="sourceLine" id="cb15-17" data-line-number="17"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">0</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb15-18" data-line-number="18"><span class="co"># plotting with different options per level is more complicated...</span></a>
+<a class="sourceLine" id="cb15-19" data-line-number="19"><span class="kw">plotPopkin</span>(</a>
+<a class="sourceLine" id="cb15-20" data-line-number="20">    <span class="kw">inbrDiag</span>(Phi),</a>
+<a class="sourceLine" id="cb15-21" data-line-number="21">    <span class="dt">labs=</span><span class="kw">cbind</span>(subpops,blocks),   <span class="co"># ... labs is now a matrix with levels on columns</span></a>
+<a class="sourceLine" id="cb15-22" data-line-number="22">    <span class="dt">labsEven=</span><span class="kw">c</span>(<span class="ot">TRUE</span>, <span class="ot">FALSE</span>),      <span class="co"># ... even spacing for first level only</span></a>
+<a class="sourceLine" id="cb15-23" data-line-number="23">    <span class="dt">labsLine=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>),              <span class="co"># ... put second level further out</span></a>
+<a class="sourceLine" id="cb15-24" data-line-number="24">    <span class="dt">labsCex=</span><span class="kw">c</span>(<span class="fl">0.7</span>, <span class="dv">1</span>),            <span class="co"># ... don't shrink second level</span></a>
+<a class="sourceLine" id="cb15-25" data-line-number="25">    <span class="dt">labsSkipLines=</span><span class="kw">c</span>(<span class="ot">TRUE</span>, <span class="ot">FALSE</span>), <span class="co"># ... draw lines inside heatmap for second level only</span></a>
+<a class="sourceLine" id="cb15-26" data-line-number="26">    <span class="dt">ylabAdj=</span><span class="fl">0.65</span>                  <span class="co"># push up outer margin ylab &quot;Individuals&quot;</span></a>
+<a class="sourceLine" id="cb15-27" data-line-number="27">    )</a></code></pre></div>
+<p>The final example adds a second panel to what we have above, showing how options must be passed when labels differ per panel and there are multiple levels:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" data-line-number="1"><span class="kw">par</span>(<span class="dt">oma=</span><span class="kw">c</span>(<span class="dv">0</span>,<span class="fl">1.5</span>,<span class="dv">0</span>,<span class="dv">3</span>))</a>
+<a class="sourceLine" id="cb16-2" data-line-number="2"><span class="kw">par</span>(<span class="dt">mar=</span><span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">0</span>)<span class="op">+</span><span class="fl">0.2</span>)</a>
+<a class="sourceLine" id="cb16-3" data-line-number="3"><span class="kw">plotPopkin</span>(</a>
+<a class="sourceLine" id="cb16-4" data-line-number="4">    <span class="kw">list</span>(<span class="kw">inbrDiag</span>(Phi), <span class="kw">inbrDiag</span>(PhiAfr)),</a>
+<a class="sourceLine" id="cb16-5" data-line-number="5">    <span class="dt">titles=</span><span class="kw">c</span>(<span class="st">'All'</span>, <span class="st">'AFR only, rescaled'</span>),</a>
+<a class="sourceLine" id="cb16-6" data-line-number="6">    <span class="dt">labs=</span><span class="kw">list</span>(<span class="kw">cbind</span>(subpops,blocks), subpopsAfr), <span class="co"># list of matrices</span></a>
+<a class="sourceLine" id="cb16-7" data-line-number="7">    <span class="dt">labsEven=</span><span class="kw">c</span>(<span class="ot">TRUE</span>, <span class="ot">FALSE</span>), <span class="co"># non-list: values are reused for both panels</span></a>
+<a class="sourceLine" id="cb16-8" data-line-number="8">    <span class="dt">labsLine=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>),</a>
+<a class="sourceLine" id="cb16-9" data-line-number="9">    <span class="co"># make label bigger in second panel (custom per-panel values)</span></a>
+<a class="sourceLine" id="cb16-10" data-line-number="10">    <span class="dt">labsCex=</span><span class="kw">list</span>(<span class="kw">c</span>(<span class="fl">0.5</span>, <span class="fl">0.7</span>), <span class="dv">1</span>), <span class="co"># list of vectors</span></a>
+<a class="sourceLine" id="cb16-11" data-line-number="11">    <span class="co"># add lines for first level of second panel (custom per-panel values)</span></a>
+<a class="sourceLine" id="cb16-12" data-line-number="12">    <span class="dt">labsSkipLines=</span><span class="kw">list</span>(<span class="kw">c</span>(<span class="ot">TRUE</span>, <span class="ot">FALSE</span>), <span class="ot">FALSE</span>) <span class="co"># list of vectors</span></a>
+<a class="sourceLine" id="cb16-13" data-line-number="13">    )</a></code></pre></div>
+</div>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-Ochoa083915">
+<p>Ochoa, Alejandro, and John D. Storey. 2016a. “<span class="math inline">\(F_{\text{ST}}\)</span> And Kinship for Arbitrary Population Structures I: Generalized Definitions.” <em>bioRxiv</em> doi:10.1101/083915. Cold Spring Harbor Labs Journals. <a href="https://doi.org/10.1101/083915" class="uri">https://doi.org/10.1101/083915</a>.</p>
+</div>
+<div id="ref-Ochoa083923">
+<p>———. 2016b. “<span class="math inline">\(F_{\text{ST}}\)</span> And Kinship for Arbitrary Population Structures II: Method of Moments Estimators.” <em>bioRxiv</em> doi:10.1101/083923. Cold Spring Harbor Labs Journals. <a href="https://doi.org/10.1101/083923" class="uri">https://doi.org/10.1101/083923</a>.</p>
+</div>
+</div>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
