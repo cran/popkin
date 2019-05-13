@@ -1,45 +1,68 @@
 context('popkin_Rdata')
 
-## message('getwd: ', getwd())
+# message('getwd: ', getwd())
 
-## ## introduce an error on purpose
-## test_that("testing is run at all!", {
-##     expect_equal(1, 2)
-## })
+# # introduce an error on purpose
+# test_that("testing is run at all!", {
+#     expect_equal(1, 2)
+# })
 
-## loads Rdata matrices to test
+# loads Rdata matrices to test
 load('Xs.RData')
 
-## start with lower-level/internal tests, more informative that higher-level function errors
+# start with lower-level/internal tests, more informative that higher-level function errors
 
-test_that("getMemLim returns positive numbers", {
-    mem <- getMemLim()
+test_that("validate_kinship works", {
+    # validate positive examples
+    expect_silent( validate_kinship( Phi ) )
+    expect_silent( validate_kinship( Phi0 ) )
+    expect_silent( validate_kinship( A ) ) # not real kinship but satisfies requirements
+
+    # negative examples
+    # dies if input is missing
+    expect_error( validate_kinship() )
+    
+    # and if input is not a matrix
+    expect_error( validate_kinship( 1:5 ) )
+    
+    # and for non-numeric matrices
+    char_mat <- matrix(c('a', 'b', 'c', 'd'), nrow=2)
+    expect_error( validate_kinship( char_mat ) )
+    
+    # and non-square matrices
+    non_kinship <- matrix(1:2, nrow=2)
+    expect_error( validate_kinship( non_kinship ) )
+})
+
+
+test_that("get_mem_lim returns positive numbers", {
+    mem <- get_mem_lim()
     expect_equal(class(mem), 'numeric')
     expect_true(mem > 0)
 })
 
-test_that("getMemLimM returns positive numbers", {
-    mc <- getMemLimM(n=1000, mem=2, m=100000) # chunk size, setting memory manually, set number of SNPs too
+test_that("get_mem_lim_m returns positive numbers", {
+    mc <- get_mem_lim_m(n=1000, mem=2, m=100000) # chunk size, setting memory manually, set number of SNPs too
     expect_equal(length(mc), 1)
     expect_equal(class(mc), 'numeric')
     expect_true(mc > 0)
-    mc <- getMemLimM(n=1000, mem=2) # chunk size, setting memory manually, omit m
+    mc <- get_mem_lim_m(n=1000, mem=2) # chunk size, setting memory manually, omit m
     expect_equal(length(mc), 1)
     expect_equal(class(mc), 'numeric')
     expect_true(mc > 0)
-    mc <- getMemLimM(n=1000) # chunk size, inferring free memory from system, omit m
+    mc <- get_mem_lim_m(n=1000) # chunk size, inferring free memory from system, omit m
     expect_equal(length(mc), 1)
     expect_equal(class(mc), 'numeric')
     expect_true(mc > 0)
 })
 
-test_that("function returns precomputed values: weightsSubpops", {
-    expect_equal(weightsSubpops(subpops0), w0)
-    expect_equal(weightsSubpops(subpops), w)
-    ## make sure dimensions match
+test_that("function returns precomputed values: weights_subpops", {
+    expect_equal(weights_subpops(subpops0), w0)
+    expect_equal(weights_subpops(subpops), w)
+    # make sure dimensions match
     expect_equal(length(w0), nrow(Phi0))
     expect_equal(length(w), nrow(Phi))
-    ## test the basic qualities of weights
+    # test the basic qualities of weights
     expect_equal(sum(w0), 1)
     expect_equal(sum(w), 1)
     expect_true(all(w0 > 0))
@@ -48,29 +71,22 @@ test_that("function returns precomputed values: weightsSubpops", {
     expect_true(all(w < 1))
 })
 
-test_that("function returns precomputed values: getA", {
-    expect_equal(getA(X), A)
-    expect_equal(getA(X+0), A) # turns numeric
-    expect_equal(getA(2L-X), A)
-    expect_equal(getA(2-X), A) # numeric version again
+test_that("function returns precomputed values: get_A", {
+    expect_equal(get_A(X), A)
+    expect_equal(get_A(X+0), A) # turns numeric
+    expect_equal(get_A(2L-X), A)
+    expect_equal(get_A(2-X), A) # numeric version again
     expect_equal(nrow(A), ncol(A))
 })
 
-test_that("function returns precomputed values: minAvgSubpops", {
-    expect_equal(minAvgSubpops(A), min(A))
-    expect_equal(minAvgSubpops(A), Amin0)
-    expect_equal(minAvgSubpops(A, subpops0), Amin0)
-    expect_equal(minAvgSubpops(A, subpops), Amin)
+test_that("function returns precomputed values: min_mean_subpops", {
+    expect_equal(min_mean_subpops(A), min(A))
+    expect_equal(min_mean_subpops(A), Amin0)
+    expect_equal(min_mean_subpops(A, subpops0), Amin0)
+    expect_equal(min_mean_subpops(A, subpops), Amin)
 })
 
-test_that("function returns precomputed values: getKinshipFromA", {
-    expect_equal(getKinshipFromA(A, Amin0), Phi0)
-    expect_equal(getKinshipFromA(A, Amin), Phi)
-    expect_equal(nrow(Phi0), ncol(Phi0))
-    expect_equal(nrow(Phi), ncol(Phi))
-})
-
-## higher-level tests now!
+# higher-level tests now!
 
 test_that("function returns precomputed values: popkin", {
     expect_equal(popkin(X), Phi0)
@@ -87,21 +103,21 @@ test_that("popkin preserves names of individuals", {
     expect_equal(colnames(X), rownames(Phi))
 })
 
-test_that("function returns precomputed values: rescalePopkin", {
-    expect_equal(rescalePopkin(Phi0, phiMin=phiMin0), Phi)
-    expect_equal(rescalePopkin(Phi0, subpops), Phi)
-    expect_equal(rescalePopkin(Phi, subpops0), Phi0)
-    expect_equal(rescalePopkin(Phi), Phi0)
+test_that("function returns precomputed values: rescale_popkin", {
+    expect_equal(rescale_popkin(Phi0, min_kinship = phiMin0), Phi)
+    expect_equal(rescale_popkin(Phi0, subpops), Phi)
+    expect_equal(rescale_popkin(Phi, subpops0), Phi0)
+    expect_equal(rescale_popkin(Phi), Phi0)
 })
 
 test_that("function returns precomputed values: fst", {
     expect_equal(fst(Phi), fst)
     expect_equal(fst(Phi, w0), fst)
     expect_equal(fst(Phi, w), fstW)
-    ## type of return value
+    # type of return value
     expect_equal(length(fstW), 1)
     expect_equal(length(fst), 1)
-    ## Fst inequalities
+    # Fst inequalities
     expect_true(fstW >= 0)
     expect_true(fst >= 0)
     expect_true(fstW <= 1)
@@ -117,14 +133,35 @@ test_that("function returns precomputed values: pwfst", {
     expect_equal(pwfst(Phi0), pwF)
     expect_equivalent(diag(pwF), rep.int(0, nrow(pwF))) # test that diagonal is zero ("equivalent" ignores label mismatches)
     expect_true(max(pwF) <= 1)
-    ## note estimates may be slightly negative though
+    # note estimates may be slightly negative though
 })
 
-test_that("function returns precomputed values: inbrDiag", {
-    expect_equal(inbrDiag(Phi), PhiInbr)
+test_that("inbr_diag works", {
+    # dies when kinship matrix is missing
+    expect_error( inbr_diag() )
+    # make sure precomputed values match
+    expect_equal( inbr_diag(Phi), PhiInbr )
+    # test list version (just duplicates things)
+    expect_equal( inbr_diag(list(Phi, Phi)), list(PhiInbr, PhiInbr) )
 })
 
-test_that("neff works", {
+test_that("mean_kinship works", {
+    # dies when kinship matrix is missing
+    expect_error(mean_kinship())
+    # equals ordinary mean without weights
+    expect_equal(mean_kinship(Phi), mean(Phi))
+    expect_equal(mean_kinship(Phi0), mean(Phi0))
+    # equals expected double weight formula under non-trivial weights
+    expect_equal(mean_kinship(Phi, w0), mean(Phi)) # this is still uniform weights actually
+    # draw random uniform for a very non-trivial test
+    weights <- runif(ncol(Phi))
+    # normalize for comparison
+    weights <- weights / sum(weights)
+    # actually compare formulas
+    expect_equal(mean_kinship(Phi, weights), drop(weights %*% Phi %*% weights))
+})
+
+test_that("n_eff works", {
 
     # a small toy case!
     F <- 0.4 # for this case to produce negative weights, need F > 1/3
@@ -133,84 +170,84 @@ test_that("neff works", {
     w3 <- c(0.4, 0.2, 0.4) # dummy weights for a test
 
     # default case is sum of elements of inverse matrix!
-    expect_equal(neff(Phi3, retW=FALSE, nonneg=FALSE), sum(solve(Phi3)))
+    expect_equal(n_eff(Phi3, nonneg=FALSE)$n_eff, sum(solve(Phi3)))
     # non-max case returns inverse of mean kinship (with uniform weights)
-    expect_equal(neff(Phi3, retW=FALSE, max=FALSE), 1/mean(Phi3))
+    expect_equal(n_eff(Phi3, max=FALSE)$n_eff, 1/mean(Phi3))
     # non-max case returns inverse of weighted mean kinship (with provided non-uniform weights)
-    expect_equal(neff(Phi3, retW=FALSE, max=FALSE, w=w3), 1/drop(w3 %*% Phi3 %*% w3))
+    expect_equal(n_eff(Phi3, max=FALSE, w=w3)$n_eff, 1/drop(w3 %*% Phi3 %*% w3))
     # test that gradient descent is the default
-    expect_equal(neff(Phi3, retW=FALSE), neff(Phi3, retW=FALSE, algo='G'))
+    expect_equal(n_eff(Phi3)$n_eff, n_eff(Phi3, algo='g')$n_eff)
     # basic inequalities
-    expect_true(neff(Phi3, retW=FALSE) >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='G') >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='N') >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='H') >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, nonneg=FALSE) >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, max=FALSE) >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE, max=FALSE, w=w3) >= 1) # min possible value
-    expect_true(neff(Phi3, retW=FALSE) <= 2*nrow(Phi3)) # max possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='G') <= 2*nrow(Phi3)) # max possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='N') <= 2*nrow(Phi3)) # max possible value
-    expect_true(neff(Phi3, retW=FALSE, algo='H') <= 2*nrow(Phi3)) # max possible value
-    expect_true(neff(Phi3, retW=FALSE, nonneg=FALSE) <= 2*nrow(Phi3)) # max possible value
-    expect_true(neff(Phi3, retW=FALSE, nonneg=FALSE) >= neff(Phi3, retW=FALSE)) # the max nEff should really be larger than a non-max case (non-optimal weights)
-    expect_true(neff(Phi3, retW=FALSE, nonneg=FALSE) >= neff(Phi3, retW=FALSE, max=FALSE)) # the max nEff should really be larger than a non-max case (non-optimal weights)
-    expect_true(neff(Phi3, retW=FALSE, nonneg=FALSE) >= neff(Phi3, retW=FALSE, max=FALSE, w=w3)) # the max nEff should really be larger than a non-max case (non-optimal weights)
-    expect_true(neff(Phi3, retW=FALSE) >= neff(Phi3, retW=FALSE, max=FALSE)) # hope the numeric max with non-negative weights gives a larger value than a uniform weights estimate (actually not gauranteed to perform better)
-    expect_true(neff(Phi3, retW=FALSE, algo='G') >= neff(Phi3, retW=FALSE, max=FALSE))
-    expect_true(neff(Phi3, retW=FALSE, algo='N') >= neff(Phi3, retW=FALSE, max=FALSE))
-    expect_true(neff(Phi3, retW=FALSE, algo='H') >= neff(Phi3, retW=FALSE, max=FALSE))
+    expect_true(n_eff(Phi3)$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, algo='g')$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, algo='n')$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, algo='h')$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, nonneg=FALSE)$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, max=FALSE)$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3, max=FALSE, w=w3)$n_eff >= 1) # min possible value
+    expect_true(n_eff(Phi3)$n_eff <= 2*nrow(Phi3)) # max possible value
+    expect_true(n_eff(Phi3, algo='g')$n_eff <= 2*nrow(Phi3)) # max possible value
+    expect_true(n_eff(Phi3, algo='n')$n_eff <= 2*nrow(Phi3)) # max possible value
+    expect_true(n_eff(Phi3, algo='h')$n_eff <= 2*nrow(Phi3)) # max possible value
+    expect_true(n_eff(Phi3, nonneg=FALSE)$n_eff <= 2*nrow(Phi3)) # max possible value
+    expect_true(n_eff(Phi3, nonneg=FALSE)$n_eff >= n_eff(Phi3)$n_eff) # the max n_eff should really be larger than a non-max case (non-optimal weights)
+    expect_true(n_eff(Phi3, nonneg=FALSE)$n_eff >= n_eff(Phi3, max=FALSE)$n_eff) # the max n_eff should really be larger than a non-max case (non-optimal weights)
+    expect_true(n_eff(Phi3, nonneg=FALSE)$n_eff >= n_eff(Phi3, max=FALSE, w=w3)$n_eff) # the max n_eff should really be larger than a non-max case (non-optimal weights)
+    expect_true(n_eff(Phi3)$n_eff >= n_eff(Phi3, max=FALSE)$n_eff) # hope the numeric max with non-negative weights gives a larger value than a uniform weights estimate (actually not gauranteed to perform better)
+    expect_true(n_eff(Phi3, algo='g')$n_eff >= n_eff(Phi3, max=FALSE)$n_eff)
+    expect_true(n_eff(Phi3, algo='n')$n_eff >= n_eff(Phi3, max=FALSE)$n_eff)
+    expect_true(n_eff(Phi3, algo='h')$n_eff >= n_eff(Phi3, max=FALSE)$n_eff)
 
     # construct some other toy data tests
     # check that we get 2*n on unstructured kinship matrix
-    expect_equal(neff(diag(1/2, 10, 10), retW=FALSE), 20)
+    expect_equal(n_eff(diag(1/2, 10, 10))$n_eff, 20)
     # check that we get K on extreme Fst=1 independent subpopulations
     # NOTE: FAILS because it's not invertible... what should we do here???
-    #    expect_equal(neff(matrix(c(1, 1, 0, 1, 1, 0, 0, 0, 1), nrow=3), retW=FALSE), 2)
+    #    expect_equal(n_eff(matrix(c(1, 1, 0, 1, 1, 0, 0, 0, 1), nrow=3)$n_eff), 2)
     # maybe construct Fst<1 case and compare to theoretical expectation there
 
     # normally weights are returned too, but their values are less constrained (by construction they sum to one, that's it!)
-    # do test both max versions since nEff is not directly constructed from the weights (test that it's what it should be)
+    # do test both max versions since n_eff is not directly constructed from the weights (test that it's what it should be)
     # test outputs in that setting now
-    obj <- neff(Phi3, algo='G') # this tests Gradient version
+    obj <- n_eff(Phi3, algo='g') # this tests Gradient version
     expect_equal(class(obj), 'list') # return class is list
     expect_equal(length(obj), 2) # only have two elements
-    # roughly retest that first element is an nEff
-    expect_true(obj$neff >= 1) # min possible value
-    expect_true(obj$neff <= 2*nrow(Phi3)) # max possible value
+    # roughly retest that first element is an n_eff
+    expect_true(obj$n_eff >= 1) # min possible value
+    expect_true(obj$n_eff <= 2*nrow(Phi3)) # max possible value
     # roughly test weights
-    expect_equal(sum(obj$w), 1) # verify that weights sum to 1
-    expect_equal(obj$neff, 1/meanKin(Phi3, obj$w)) # verify that neff has the value it should have given the weights
+    expect_equal(sum(obj$weights), 1) # verify that weights sum to 1
+    expect_equal(obj$n_eff, 1/mean_kinship(Phi3, obj$weights)) # verify that n_eff has the value it should have given the weights
     
-    obj <- neff(Phi3, algo='N') # this tests Newton version
+    obj <- n_eff(Phi3, algo='n') # this tests Newton version
     expect_equal(class(obj), 'list') # return class is list
     expect_equal(length(obj), 2) # only have two elements
-    # roughly retest that first element is an nEff
-    expect_true(obj$neff >= 1) # min possible value
-    expect_true(obj$neff <= 2*nrow(Phi3)) # max possible value
+    # roughly retest that first element is an n_eff
+    expect_true(obj$n_eff >= 1) # min possible value
+    expect_true(obj$n_eff <= 2*nrow(Phi3)) # max possible value
     # roughly test weights
-    expect_equal(sum(obj$w), 1) # verify that weights sum to 1
-    expect_equal(obj$neff, 1/meanKin(Phi3, obj$w)) # verify that neff has the value it should have given the weights
+    expect_equal(sum(obj$weights), 1) # verify that weights sum to 1
+    expect_equal(obj$n_eff, 1/mean_kinship(Phi3, obj$weights)) # verify that n_eff has the value it should have given the weights
     
-    obj <- neff(Phi3, algo='H') # this tests Heuristic version
+    obj <- n_eff(Phi3, algo='h') # this tests Heuristic version
     expect_equal(class(obj), 'list') # return class is list
     expect_equal(length(obj), 2) # only have two elements
-    # roughly retest that first element is an nEff
-    expect_true(obj$neff >= 1) # min possible value
-    expect_true(obj$neff <= 2*nrow(Phi3)) # max possible value
+    # roughly retest that first element is an n_eff
+    expect_true(obj$n_eff >= 1) # min possible value
+    expect_true(obj$n_eff <= 2*nrow(Phi3)) # max possible value
     # roughly test weights
-    expect_equal(sum(obj$w), 1) # verify that weights sum to 1
-    expect_equal(obj$neff, 1/meanKin(Phi3, obj$w)) # verify that neff has the value it should have given the weights
+    expect_equal(sum(obj$weights), 1) # verify that weights sum to 1
+    expect_equal(obj$n_eff, 1/mean_kinship(Phi3, obj$weights)) # verify that n_eff has the value it should have given the weights
     
-    obj <- neff(Phi3, nonneg=FALSE) # this tests optimal version (with possibly negative weights)
+    obj <- n_eff(Phi3, nonneg=FALSE) # this tests optimal version (with possibly negative weights)
     expect_equal(class(obj), 'list') # return class is list
     expect_equal(length(obj), 2) # only have two elements
-    # roughly retest that first element is an nEff
-    expect_true(obj$neff >= 1) # min possible value
-    expect_true(obj$neff <= 2*nrow(Phi3)) # max possible value
+    # roughly retest that first element is an n_eff
+    expect_true(obj$n_eff >= 1) # min possible value
+    expect_true(obj$n_eff <= 2*nrow(Phi3)) # max possible value
     # roughly test weights
-    expect_equal(sum(obj$w), 1) # verify that weights sum to 1
-    expect_equal(obj$neff, 1/meanKin(Phi3, obj$w)) # verify that neff has the value it should have given the weights
-    expect_true(min(obj$w) < 0) # this example must have negative weights, or it's useless!
+    expect_equal(sum(obj$weights), 1) # verify that weights sum to 1
+    expect_equal(obj$n_eff, 1/mean_kinship(Phi3, obj$weights)) # verify that n_eff has the value it should have given the weights
+    expect_true(min(obj$weights) < 0) # this example must have negative weights, or it's useless!
 })
 

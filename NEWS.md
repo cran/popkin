@@ -59,3 +59,38 @@ These names get copied to the rows and columns of the output kinship matrix.
 
 * Minor non-code changes for second CRAN submission.
 
+# 2019-04-10 - popkin 1.2.0.9000
+
+* Renamed functions to fit tidyverse naming style:
+  * `inbrDiag` -> `inbr_diag`
+  * `neff` -> `n_eff`
+  * `plotPopkin` -> `plot_popkin`
+  * `rescalePopkin` -> `rescale_popkin`
+  * `weightsSubpops` -> `weights_subpops`
+  * Several argument names were also updated to be more descriptive (particularly in `plot_popkin`).
+  * Functions with old names remain for now as deprecated functions (to be removed in the future); only `plotPopkin` retains the older argument names.
+* `inbr_diag` now accepts lists of kinship matrices to transform (for easier plotting of multiple matrices).
+* `plot_popkin` now requires its non-NULL inputs to be proper kinship matrices.
+  Previously, the code used to somewhat allow for non-square matrices to be visualized, but this case had no guarantees to work.
+  The code is cleaner under the assumption of symmetric square matrices.
+* Added more input checks to functions, informative error messages.
+* Added functions: `validate_kinship`, `mean_kinship`
+
+# 2019-04-24 - popkin 1.2.1.9000
+
+`plot_popkin` bug fixes and enhancements!
+
+* `plot_popkin` now resets graphical parameters when done and after every panel as needed.
+  * Fixed a bug where panel margins were not reset per panel.
+    In particular, after setting custom margins for one panel, but `NULL` (default) for subsequent panels, the original margins were not reset (instead, the last values were incorrectly propagated).
+  * The entire layout (all original `par` values) is now reset after plotting is complete.
+  * Updated documentation to reflect new behavior.
+* Can now have letters on single-panel plots as long as a single letter is passed to `plot_popkin` option `panel_letters` (default is A-Z, so the default remains to not show letters for a single panel).
+* Added `leg_cex` option to `plot_popkin`.
+
+# 2019-05-13 - popkin 1.2.2
+
+* Third CRAN submission.
+* Added ORCIDs to authors.
+* Added back to `popkin` function the deprecated parameter names `lociOnCols` and `memLim` alongside the new names, to prevent breaking existing code (generate warnings).
+
