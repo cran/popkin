@@ -4,8 +4,14 @@
 \alias{n_eff}
 \title{Calculates the effective sample size of the data}
 \usage{
-n_eff(kinship, max = TRUE, weights = NULL, nonneg = TRUE,
-  algo = c("gradient", "newton", "heuristic"), tol = 1e-10)
+n_eff(
+  kinship,
+  max = TRUE,
+  weights = NULL,
+  nonneg = TRUE,
+  algo = c("gradient", "newton", "heuristic"),
+  tol = 1e-10
+)
 }
 \arguments{
 \item{kinship}{An \eqn{n \times n}{n-by-n} kinship matrix.}
@@ -40,6 +46,9 @@ The maximum \eqn{n_{eff}}{n_eff} possible is \eqn{2n}, where \eqn{n} is the numb
 The minimum \eqn{n_{eff}}{n_eff} possible is 1, which is attained in an extremely structured population with \eqn{F_{ST}}{FST} of 1, where every individual has exactly the same haplotype at every locus (no heterozygotes).
 Moreover, for \eqn{K} extremely-differentiated subpopulations (\eqn{F_{ST}}{FST}=1 per subpopulation) \eqn{n_{eff}}{n_eff} equals \eqn{K}.
 In this way, \eqn{n_{eff}}{n_eff} is smaller than the ideal value of \eqn{2n} depending on the amount of kinship (covariance) in the data.
+
+Occasionally, depending on the quality of the input kinship matrix, the estimated \eqn{n_{eff}}{n_eff} may be outside the theoretical [1, 2n] range, in which case the return value is set to the closest boundary value.
+The quality of the results depends on the success of matrix inversion (which for numerical reasons may incorrectly contain negative eigenvalues, for example) or of the gradient optimization.
 }
 \examples{
 # Get n_eff from a genotype matrix

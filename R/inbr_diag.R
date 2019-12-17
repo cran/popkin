@@ -6,9 +6,11 @@
 #'
 #' @param kinship A kinship matrix with self-kinship values along the diagonal.
 #' Can pass multiple kinship matrices contained in a list.
+#' If \code{NULL}, it is returned as-is.
 #'
 #' @return The modified kinship matrix, with inbreeding coefficients along the diagonal, preseving column and row names.
 #' If the input was a list of kinship matrices, the output is the corresponding list of transformed matrices.
+#' \code{NULL} inputs are preserved without causing errors.
 #'
 #' @examples
 #' #########
@@ -30,6 +32,9 @@
 #'
 #' # for a list of matrices, returns list of transformed matrices:
 #' inbr_diag( list(kinship, kinship) )
+#' 
+#' # a list with NULL values also works
+#' inbr_diag( list(kinship, NULL, kinship) )
 #' 
 #' #########
 #' # Construct toy data (to more closely resemble real data analysis)
@@ -58,10 +63,15 @@ inbr_diag <- function(kinship) {
     
     # if input is a list, process each element (recursively calling self)
     # returns a list of the same length in this case
-    if (class(kinship) == 'list')
+    if ( is.list(kinship) )
         return ( lapply( kinship, inbr_diag ) )
 
-    # assuming we're in the singleton case now, run additional validations
+    # we now assume we're in the singleton case now
+    # handle NULL case
+    if ( is.null(kinship) )
+        return(NULL)
+    
+    # additional validations
     validate_kinship(kinship)
 
     # ready to actually process!
@@ -70,29 +80,4 @@ inbr_diag <- function(kinship) {
 
     # return edited matrix
     return(kinship)
-}
-
-# stick deprecated function name here
-
-#' @title Replace kinship diagonal with inbreeding coefficients
-#' @description Replace kinship diagonal with inbreeding coefficients
-#' @param kinship A kinship matrix
-#' @return The modified kinship matrix, with inbreeding coefficients along the diagonal.
-#'
-#' @name inbrDiag-deprecated
-#' @usage inbrDiag(kinship)
-#' @seealso \code{\link{popkin-deprecated}}
-#' @keywords internal
-NULL
-
-#' @rdname popkin-deprecated
-#' @section \code{inbrDiag}:
-#' For \code{inbrDiag}, use \code{\link{inbr_diag}}.
-#'
-#' @export
-inbrDiag <- function(kinship) {
-    # mark as deprecated
-    .Deprecated('inbr_diag')
-    # return as usual, to not break things just yet
-    inbr_diag(kinship)
 }

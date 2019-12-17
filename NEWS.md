@@ -94,3 +94,109 @@ These names get copied to the rows and columns of the output kinship matrix.
 * Added ORCIDs to authors.
 * Added back to `popkin` function the deprecated parameter names `lociOnCols` and `memLim` alongside the new names, to prevent breaking existing code (generate warnings).
 
+# 2019-05-30 - popkin 1.2.3
+
+* `inbr_diag` now handles `NULL` inputs correctly (preserves them as `NULL` without throwing errors).
+* `plot_popkin` has a new logical option `null_panel_data`, to change behavior in the presence of `NULL` kinship matrices (whether they must or must not have titles and other parameters).
+  * The new default is to not specify any data for `NULL` panels
+
+# 2019-06-05 - popkin 1.2.4
+
+* Non-code changes:
+  * Edited .Rbuildignore to stop ignoring README; also removed non-existent files from list
+  * Removed unused popkin.Rproj file
+
+# 2019-07-24 - popkin 1.2.4.9000
+
+* Added internal function `solve_m_mem_lim`, which generalizes previous behavior to estimate chunk sizes (in number of loci) given a limited memory and number of individuals for various numbers of matrices (of dimensions (m,n) or (n,n)) and vectors (lengths m or n).
+  This function is shared with related projects (such as `popkinsuppl` on GitHub).
+
+# 2019-07-29 - popkin 1.2.5.9000
+
+* Now `solve_m_mem_lim` always returns integer chunk sizes (number of loci).
+  Previously the function returned non-integers only if the total matrix size `m` was not provided.
+
+# 2019-08-02 - popkin 1.2.6.9000
+
+* Reorganized internal code, mostly to facilitate use of the internal function `solve_m_mem_lim` in other dependent packages.
+  In particular, the internal function `get_mem_lim_m` was removed.
+* The `popkin` function accepts the new parameter `mem_factor`.
+
+# 2019-08-08 - popkin 1.2.7.9000
+
+`plot_popkin` updates:
+
+* Bug fixes
+  * Fixed a minor bug in which labels under `labs_even = TRUE` were not placed correctly.
+    The error was most evident for very small samples (i.e. `n = 3` individuals), and was imperceptible otherwise (i.e. `n = 100` or more).
+  * Fixed a minor bug in which the diagonal line under `diag_line = TRUE` did not extend fully to extremes.
+    This error was again most evident for very small samples, and was imperceptible otherwise.
+* New features
+  * Added `weights` option, to change width of every individual to highlight individuals with more weight.
+  * Added `raster` option, equivalent to `useRaster` option in the `image` function used internally.
+    If `weights` are not `NULL`, `raster` is forced to `FALSE` (required for `image` to work in this setting).
+    So its only use is to set it when `weights` are null, as needed.
+* Other changes
+  * Changed default plot range to (0, 1), in terms of boundaries.
+    It used to be (1, n) for bin centers, but this setup was too awkward for weighted data.
+  * Minor documentation clarifications to some of this function's unchanged arguments.
+
+# 2019-08-21 - popkin 1.2.8.9000
+
+Memory control bugfixes
+
+* Fixed a serious bug that could let memory usage explode when analyzing large datasets.
+  * The bug prevented memory usage from being controlled correctly when the genotype matrix did not fit entirely in memory.
+  * The bug had no effect if the entire genotype matrix of interest was small enough to fit in memory.
+  * The bug was introduced in 2019-08-02, popkin 1.2.6.9000, commit 643a276974171d86ea621df3d25e1937a100d09a
+* Tweaked popkin-specific memory formula to better control memory when a BEDMatrix object is analyzed
+  * This improvement is relative to popkin's formula prior to the aforementioned bug (version 1.2.5.9000 and earlier)
+* Internal function `solve_m_mem_lim` now returns memory limit from `get_mem_lim` or user, in addition to the chunk size in both number of loci and in expected memory usage.
+
+Other enhancements
+
+* `n_eff` function now ensures output `n_eff` estimates are in the theoretically valid range of [ 1, 2*n ].
+  Numerical issues in small and noisy kinship matrix estimates could lead to out-of-bounds estimates, which are now replaced with their closest boundary values.
+
+# 2019-09-16 - popkin 1.2.9.9000
+
+* In function `plot_popkin`, added option `names_las`
+* In internal function `plot_popkin_single`:
+  * Changed the default value of `kinship_range` to agree with the default of `plot_popkin` when a single kinship matrix is plotted (as a result, default colors now agree in that case too).
+  * Its return value `breaks` is now invisible.
+  * No changes through `plot_popkin` are visible, differences are only noticeable calling this internal function `plot_popkin_single` directly.
+
+# 2019-10-15 - popkin 1.2.10.9000
+
+Improvements to function `plot_popkin`:
+
+* Added option `leg_per_panel`, which if true allows each kinship panel to have a different scale (each gets its own legend/color key).
+* Extended various `leg_*` options to be able to take on different values per panel.
+* Added option `leg_width` to control the width of the legend panels.
+  Increased the default width of this legend/color key (from 0.1 to 0.3, as a fraction of the width of the kinship panels), which changes the behavior in the original case when this legend is shared across kinship panels.
+  Now the full legend fits in the panel, without needing an outer margin to the right.
+* Option `leg_mar` behavior changed.
+  Now `leg_mar` can be a scalar, which sets the right margin of the legend panel.
+  New default is `leg_mar = 3`, again necessary so the label of the legend fits in the panel.
+  Previous behaviors of `leg_mar = NULL` and a full margin specification are retained.
+
+# 2019-10-17 - popkin 1.2.11.9000
+
+More improvements to function `plot_popkin`:
+
+* Added option `oma`, which sets outer margins via `par(oma)` but provides additional useful shortcuts and defaults.
+  This changes the default behavior of `plot_popkin` by setting the left outer margin to 1.5 (all other values are zero), whereas before `plot_popkin` did not set any outer margins.
+  This new default behavior makes the "Individuals" outer label appear automatically in plots (whereas before, simply calling `plot_popkin` without setting outer margins resulted in this outer-margin y-axis label being hidden from view).
+* Extended the behavior of `mar` to accept various shortcuts (scalar values set only bottom and left margin, whereas the second value of a vector of length 2 sets the top margin, which is otherwise zero; in these two cases the right margin is zero).
+  Default behavior remains to not change existing margins.
+* Vignette was simplified given the new handy defaults and shortcuts.
+
+# 2019-12-17 - popkin 1.3.0
+
+* Fourth CRAN submission.
+* Removed deprecated function names: `inbrDiag`, `neff`, `plotPopkin`, `rescalePopkin`, `weightsSubpops`.
+  * Removed deprecated parameter names on `popkin` function: `lociOnCols`, `memLim`.
+* Updated `class` usage now that matrices return a two-element array in R-devel (required by CRAN).
+* Added `calc_leg_width_min` internal function, though it is unfinished and unused.
+* Moved logo to `man/figures/`
+* Minor Roxygen-related updates.

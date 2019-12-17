@@ -4,16 +4,47 @@
 \alias{plot_popkin}
 \title{Visualize one or more kinship matrices}
 \usage{
-plot_popkin(kinship, titles = NULL, col = NULL, col_n = 100,
-  mar = NULL, mar_pad = 0.2, diag_line = FALSE,
-  panel_letters = toupper(letters), panel_letters_cex = 1.5,
-  ylab = "Individuals", ylab_adj = NA, ylab_line = 0,
-  layout_add = TRUE, layout_rows = 1, leg_title = "Kinship",
-  leg_cex = 1, leg_mar = NULL, leg_n = 5, names = FALSE,
-  names_cex = 1, names_line = NA, labs = NULL, labs_cex = 1,
-  labs_las = 0, labs_line = 0, labs_sep = TRUE, labs_lwd = 1,
-  labs_col = "black", labs_ticks = FALSE, labs_text = TRUE,
-  labs_even = FALSE, ...)
+plot_popkin(
+  kinship,
+  titles = NULL,
+  col = NULL,
+  col_n = 100,
+  mar = NULL,
+  mar_pad = 0.2,
+  oma = 1.5,
+  diag_line = FALSE,
+  panel_letters = toupper(letters),
+  panel_letters_cex = 1.5,
+  ylab = "Individuals",
+  ylab_adj = NA,
+  ylab_line = 0,
+  layout_add = TRUE,
+  layout_rows = 1,
+  leg_per_panel = FALSE,
+  leg_title = "Kinship",
+  leg_cex = 1,
+  leg_n = 5,
+  leg_mar = 3,
+  leg_width = 0.3,
+  names = FALSE,
+  names_cex = 1,
+  names_line = NA,
+  names_las = 2,
+  labs = NULL,
+  labs_cex = 1,
+  labs_las = 0,
+  labs_line = 0,
+  labs_sep = TRUE,
+  labs_lwd = 1,
+  labs_col = "black",
+  labs_ticks = FALSE,
+  labs_text = TRUE,
+  labs_even = FALSE,
+  null_panel_data = FALSE,
+  weights = NULL,
+  raster = is.null(weights),
+  ...
+)
 }
 \arguments{
 \item{kinship}{A numeric kinship matrix or a list of matrices.
@@ -25,62 +56,80 @@ Note \code{kinship} may contain \code{NULL} elements (makes blank plots with tit
 
 \item{col_n}{The number of colors to use in the heatmap (applies if \code{col = NULL}).}
 
-\item{mar}{Margins for each panel (if a list) or for all panels (if a vector).
-Margins are in \code{c(bottom,left,top,right)} format that \code{\link[graphics]{par}('mar')} expects.
-Note the padding \code{mar_pad} below is also added to every margin if set.
+\item{mar}{Margins shared by all panels (if a vector) or for each panel (if a list of such vectors).
+If the vector has length 1, \code{mar} corresponds to the shared lower and left margins, while the top and right margins are set to zero.
+If this length is 2, \code{mar[1]} is the same as above, while \code{mar[2]} is the top margin.
+If this length is 4, then \code{mar} is a fully-specified margin vector in the standard format \code{c(bottom, left, top, right)} that \verb{\link[graphics]\{par\}('mar')} expects.
+Vectors of invalid lengths produce a warning.
+Note the padding \code{mar_pad} below is added to every margin if set.
 If \code{NULL}, the original margin values are used without change, and are reset for every panel that has a \code{NULL} value.
 The original margins are also reset after plotting is complete.}
 
 \item{mar_pad}{Margin padding added to all panels (\code{mar} above and \code{leg_mar} below).
 Default 0.2.
-Must be a scalar or a vector of length 4 to match \code{\link[graphics]{par}('mar')}.}
+Must be a scalar or a vector of length 4 to match \verb{\link[graphics]\{par\}('mar')}.}
+
+\item{oma}{Outer margin vector.
+If length 1, the value of \code{oma} is applied to the left outer margin only (so \code{ylab} below displays correctly) and zero outer margins elsewhere.
+If length 4, all outer margins are expected in standard format \verb{\link[graphics]\{par\}('mar')} expects (see \code{mar} above).
+\code{mar_pad} above is never added to outer margins.
+If \code{NULL}, no outer margins are set (previous settings are preserved).
+Vectors of invalid lengths produce a warning.}
 
 \item{diag_line}{If \code{TRUE} adds a line along the diagonal (default no line).
-May also be a vector of booleans to set per panel (lengths must agree).}
+May also be a vector of logicals to set per panel (lengths must agree).}
 
 \item{panel_letters}{Vector of strings for labeling panels (default A-Z).
-No labels are added if \code{panel_letters = NULL}, or when there is only one panel except if \code{panel_letters} is set to a single letter in that case (this behavior is useful if goal is to have multiple external panels but popkin only creates one of these panels).}
+No labels are added if \code{NULL}, or when there is only one panel except if its set to a single letter in that case (this behavior is useful if goal is to have multiple external panels but popkin only creates one of these panels).}
 
-\item{panel_letters_cex}{Scaling factor of panel letters (default 1.5).
-
-AXIS LABEL OPTIONS}
+\item{panel_letters_cex}{Scaling factor of panel letters (default 1.5).}
 
 \item{ylab}{The y-axis label (default "Individuals").
 If \code{length(ylab) == 1}, the label is placed in the outer margin (shared across panels);
 otherwise \code{length(ylab)} must equal the number of panels and each label is placed in the inner margin of the respective panel.}
 
-\item{ylab_adj}{The value of "adj" passed to \code{\link[graphics]{mtext}}.
+\item{ylab_adj}{The value of "adj" passed to \verb{\link[graphics]\{mtext\}}.
 If \code{length(ylab) == 1}, only the first value is used, otherwise \code{length(ylab_adj)} must equal the number of panels.}
 
-\item{ylab_line}{The value of "line" passed to \code{\link[graphics]{mtext}}.
+\item{ylab_line}{The value of "line" passed to \verb{\link[graphics]\{mtext\}}.
 If \code{length(ylab) == 1}, only the first value is used, otherwise \code{length(ylab_line)} must equal the number of panels.
 
 LAYOUT OPTIONS}
 
-\item{layout_add}{If \code{TRUE} (default) then \code{\link[graphics]{layout}} is called internally with appropriate values for the required number of panels for each matrix, the desired number of rows (see \code{layout_rows} below) plus the color key legend.
+\item{layout_add}{If \code{TRUE} (default) then \verb{\link[graphics]\{layout\}} is called internally with appropriate values for the required number of panels for each matrix, the desired number of rows (see \code{layout_rows} below) plus the color key legend.
 The original layout is reset when plotting is complete and if \code{layout_add = TRUE}.
-If a non-standard layout or additional panels (beyond those provided by \code{plot_popkin}) are desired, set to FALSE and call \code{\link[graphics]{layout}} yourself beforehand.}
+If a non-standard layout or additional panels (beyond those provided by \code{plot_popkin}) are desired, set to \code{FALSE} and call \verb{\link[graphics]\{layout\}} yourself beforehand.}
 
 \item{layout_rows}{Number of rows in layout, used only if \code{layout_add = TRUE}.
 
 LEGEND (COLOR KEY) OPTIONS}
 
-\item{leg_title}{The name of the variable that the heatmap colors measure (default "Kinship").}
+\item{leg_per_panel}{If \code{TRUE}, every kinship matrix get its own legend/color key (best for matrices with very different scales).
+If \code{FALSE} (default), a single legend/color key is shared by all kinship matrix panels.}
 
-\item{leg_cex}{Scaling factor for \code{leg_title} (default 1).}
+\item{leg_title}{The name of the variable that the heatmap colors measure (default "Kinship"), or a vector of such values if they vary per panel.}
 
-\item{leg_mar}{Margin vector (in \code{c(bottom,left,top,right)} format that \code{\link[graphics]{par}('mar')} expects) for the legend panel only.
-If not provided, the margins used in the last panel are preserved with the exception that the left margin is set to zero (plus the value of \code{mar_pad}, see above).}
+\item{leg_cex}{Scaling factor for \code{leg_title} (default 1), or a vector of such values if they vary per panel.}
 
-\item{leg_n}{The desired number of ticks in the legend y-axis (input to \code{\link{pretty}}, see that for more details).
+\item{leg_n}{The desired number of ticks in the legend y-axis (input to \verb{\link{pretty}}, see that for more details), or a vector of such values if they vary per panel.}
+
+\item{leg_mar}{Margin values for the legend panel only, or a list of such values if they vary per panel.
+A length-4 vector (in \code{c( bottom, left, top, right )} format that \verb{\link[graphics]\{par\}('mar')} expects) specifies the full margins, to which \code{mar_pad} is added.
+Otherwise, the margins used in the last panel are preserved with the exception that the left margin is set to zero, and if \code{leg_mar} is length-1, it is used to specify the right margin (plus the value of \code{mar_pad}, see above).
 
 INDIVIDUAL LABEL OPTIONS}
 
-\item{names}{If \code{TRUE}, the column and row names are plotted in the heatmap.}
+\item{leg_width}{The width of the legend panel, relative to the width of the kinship panel.
+This value is passed to \verb{\link[graphics]\{layout\}} (ignored if \code{layout_add = FALSE}).}
 
-\item{names_cex}{Scaling factor for the column and row names.}
+\item{names}{If \code{TRUE}, the column and row names are plotted in the heatmap, or a vector of such values if they vary per panel.}
 
-\item{names_line}{Line where column and row names are placed.
+\item{names_cex}{Scaling factor for the column and row names, or a vector of such values if they vary per panel.}
+
+\item{names_line}{Line where column and row names are placed, or a vector of such values if they vary per panel.}
+
+\item{names_las}{Orientation of labels relative to axis.
+Default (2) makes labels perpendicular to axis.
 
 SUBPOPULATION LABEL OPTIONS}
 
@@ -90,25 +139,41 @@ If input is a vector or a matrix, the same subpopulation labels are shown for ev
 
 \item{labs_cex}{A vector of label scaling factors for each level of labs, or a list of such vectors if labels vary per panel.}
 
-\item{labs_las}{A vector of label orientations (in format that \code{\link[graphics]{mtext}} expects) for each level of labs, or a list of such vectors if labels vary per panel.}
+\item{labs_las}{A vector of label orientations (in format that \verb{\link[graphics]\{mtext\}} expects) for each level of labs, or a list of such vectors if labels vary per panel.}
 
-\item{labs_line}{A vector of lines where labels are placed (in format that \code{\link[graphics]{mtext}} expects) for each level of labs, or a list of such vectors if labels vary per panel.}
+\item{labs_line}{A vector of lines where labels are placed (in format that \verb{\link[graphics]\{mtext\}} expects) for each level of labs, or a list of such vectors if labels vary per panel.}
 
-\item{labs_sep}{A vector of booleans that specify whether lines separating the subpopulations are drawn for each level of labs, or a list of such vectors if labels vary per panel.}
+\item{labs_sep}{A vector of logicals that specify whether lines separating the subpopulations are drawn for each level of labs, or a list of such vectors if labels vary per panel.}
 
 \item{labs_lwd}{A vector of line widths for the lines that divide subpopulations (if \code{labs_sep = TRUE}) for each level of labs, or a list of such vectors if labels vary per panel.}
 
 \item{labs_col}{A vector of colors for the lines that divide subpopulations (if \code{labs_sep = TRUE}) for each level of labs, or a list of such vectors if labels vary per panel.}
 
-\item{labs_ticks}{A vector of booleans that specify whether ticks separating the subpopulations are drawn for each level of labs, or a list of such vectors if labels vary per panel.}
+\item{labs_ticks}{A vector of logicals that specify whether ticks separating the subpopulations are drawn for each level of labs, or a list of such vectors if labels vary per panel.}
 
-\item{labs_text}{A vector of booleans that specify whether the subpopulation labels are shown for each level of labs, or a list of such vectors if labels vary per panel.
+\item{labs_text}{A vector of logicals that specify whether the subpopulation labels are shown for each level of labs, or a list of such vectors if labels vary per panel.
 Useful for including separating lines or ticks without text.}
 
-\item{labs_even}{A vector of booleans that specify whether the subpopulations labels are drawn with equal spacing for each level of labs, or a list of such vectors if labels vary per panel.
+\item{labs_even}{A vector of logicals that specify whether the subpopulations labels are drawn with equal spacing for each level of labs, or a list of such vectors if labels vary per panel.
 When \code{TRUE}, lines mapping the equally-spaced labels to the unequally-spaced subsections of the heatmap are also drawn.}
 
-\item{...}{Additional options passed to \code{\link[graphics]{image}}.
+\item{null_panel_data}{If \code{FALSE} (default), panels with \code{NULL} kinship matrices must not have titles or other parameters set, and no panel letters are used in these cases.
+If \code{TRUE}, panels with \code{NULL} kinship matrices must have titles and other parameters set.
+In the latter case, these \code{NULL} panels also get panel letters.
+The difference is important when checking that lengths of non-singleton parameters agree.}
+
+\item{weights}{A vector with weights for every individual, or a list of such vectors if they vary per panel.
+The width of every individual becomes proportional to their weight.
+Individuals with zero or negative weights are omitted.}
+
+\item{raster}{A logical equivalent to \code{useRaster} option in the \code{image} function used internally, or a vector of such logicals if the choice varies per panel.
+If \code{weights} are non-\code{NULL} in a given panel, \code{raster = FALSE} is forced (this is necessary to plot images where columns and rows have variable width).
+If \code{weights} are \code{NULL}, the default is \code{raster = TRUE}, but in this case the user may override (for example, so panels are visually coherent when some use weights while others do not, as there are small differences in rendering implementation for each value of \code{raster}).
+Note that a multipanel figure with a list of \code{weights} sets \code{raster = FALSE} to all panels by default, even if the weights were only applied to a subset of panels.
+
+AXIS LABEL OPTIONS}
+
+\item{...}{Additional options passed to \verb{\link[graphics]\{image\}}.
 These are shared across panels}
 }
 \description{
@@ -118,7 +183,7 @@ This code assumes input matrices are symmetric.
 }
 \details{
 \code{plot_popkin} plots the input kinship matrices as-is.
-For best results, a standard kinship matrix (such as the output of \code{\link{popkin}}) should have its diagonal rescaled to contain inbreeding coefficients (\code{\link{inbr_diag}} does this) before \code{plot_popkin} is used.
+For best results, a standard kinship matrix (such as the output of \verb{\link{popkin}}) should have its diagonal rescaled to contain inbreeding coefficients (\verb{\link{inbr_diag}} does this) before \code{plot_popkin} is used.
 
 This function permits the labeling of individuals (from row and column names when \code{names = TRUE}) and of subpopulations (passed through \code{labs}).
 The difference is that the labels passed through \code{labs} are assumed to be shared by many individuals, and lines (or other optional visual aids) are added to demarcate these subgroups.

@@ -41,19 +41,71 @@ test_that("get_mem_lim returns positive numbers", {
     expect_true(mem > 0)
 })
 
-test_that("get_mem_lim_m returns positive numbers", {
-    mc <- get_mem_lim_m(n=1000, mem=2, m=100000) # chunk size, setting memory manually, set number of SNPs too
-    expect_equal(length(mc), 1)
-    expect_equal(class(mc), 'numeric')
-    expect_true(mc > 0)
-    mc <- get_mem_lim_m(n=1000, mem=2) # chunk size, setting memory manually, omit m
-    expect_equal(length(mc), 1)
-    expect_equal(class(mc), 'numeric')
-    expect_true(mc > 0)
-    mc <- get_mem_lim_m(n=1000) # chunk size, inferring free memory from system, omit m
-    expect_equal(length(mc), 1)
-    expect_equal(class(mc), 'numeric')
-    expect_true(mc > 0)
+test_that("solve_m_mem_lim works", {
+    # mem is in GB here, inferred from system if missing
+    n <- 1000
+    m <- 100000
+    # create failures on purpose
+    expect_error( solve_m_mem_lim() ) # mandatory values missing
+    expect_error( solve_m_mem_lim( mem = 1, n = n ) ) # counts of m matrices are zero
+    expect_error( solve_m_mem_lim( mem = 1/GB, n = n, vec_m = 1, mat_n_n = 1 ) ) # memory is too low for the n given
+    # now reasonable success cases
+    solve_m_mem_lim_TESTER <- function(
+                                       mat_m_n = 0,
+                                       mat_n_n = 0,
+                                       vec_m = 0,
+                                       vec_n = 0,
+                                       mem = NA
+                                       ) {
+        data <- solve_m_mem_lim(
+            mem = mem,
+            n = n,
+            m = m,
+            mat_m_n = mat_m_n,
+            mat_n_n = mat_n_n,
+            vec_m = vec_m,
+            vec_n = vec_n
+        )
+        expect_equal(class(data), 'list')
+        expect_equal(length(data), 3)
+        expect_equal(names(data), c('m_chunk', 'mem_chunk', 'mem_lim'))
+        # data sets bounds too!
+        expect_true( data$m_chunk > 0 )
+        expect_true( data$m_chunk <= m )
+        expect_true( data$mem_chunk > 0 )
+        # don't test this if no memory was specified
+        if ( !is.na(mem) )
+            expect_true( data$mem_chunk/GB < mem ) # strict ineq because of factor = 0.7
+    }
+    
+    # repeat with various settings
+    # we can't have both mat_m_n and vec_m be zero, but all other cases are tested (12 cases)
+    # here we set memory manually to 1GB
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, vec_m = 1)
+    solve_m_mem_lim_TESTER(mem = 1, vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, vec_m = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_m = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = 1, mat_m_n = 1, vec_m = 1, vec_n = 1, mat_n_n = 1)
+    # repeat inferring memory from system
+    solve_m_mem_lim_TESTER(mat_m_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(vec_m = 1)
+    solve_m_mem_lim_TESTER(vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(vec_m = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, vec_n = 1, mat_n_n = 1)
 })
 
 test_that("function returns precomputed values: weights_subpops", {
@@ -251,3 +303,65 @@ test_that("n_eff works", {
     expect_true(min(obj$weights) < 0) # this example must have negative weights, or it's useless!
 })
 
+test_that("plot_popkin works", {
+    # set up a temporary path to write to
+    fo <- tempfile('test-plot-popkin', fileext = '.pdf')
+    
+    # singleton works
+    pdf( fo )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_silent( plot_popkin( inbr_diag(Phi), labs = subpops ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+    
+    # list works
+    pdf( fo, width = 14 ) # make wider
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_silent( plot_popkin( inbr_diag( list(Phi, Phi0) ) ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+
+    # list with NULL works
+    pdf( fo, width = 14 )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_silent( plot_popkin( inbr_diag( list(Phi, NULL) ) ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+    
+    # test mismatch cases with NULLs and titles
+    
+    # this should work in old version
+    pdf( fo, width = 14 )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_silent( plot_popkin( inbr_diag( list(Phi, NULL) ), titles = c('a', 'b'), null_panel_data = TRUE ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+    
+    # this should fail in old version
+    pdf( fo, width = 14 )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_error( plot_popkin( inbr_diag( list(Phi, NULL) ), titles = 'a', null_panel_data = TRUE ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+    
+    # this should fail in new version
+    pdf( fo, width = 14 )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_error( plot_popkin( inbr_diag( list(Phi, NULL) ), titles = c('a', 'b'), null_panel_data = FALSE ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+    
+    # this should work in new version
+    pdf( fo, width = 14 )
+    par(oma = c(0, 1.5, 0, 3))
+    par(mar = c(0, 0, 2, 0) + 0.2)
+    expect_silent( plot_popkin( inbr_diag( list(Phi, NULL) ), titles = 'a', null_panel_data = FALSE ) )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+})
