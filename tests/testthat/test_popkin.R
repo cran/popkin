@@ -16,7 +16,7 @@ test_that("validate_kinship works", {
     # validate positive examples
     expect_silent( validate_kinship( Phi ) )
     expect_silent( validate_kinship( Phi0 ) )
-    expect_silent( validate_kinship( A ) ) # not real kinship but satisfies requirements
+    expect_silent( validate_kinship( A, name = 'A' ) ) # not real kinship but satisfies requirements
 
     # negative examples
     # dies if input is missing
@@ -31,6 +31,10 @@ test_that("validate_kinship works", {
     
     # and non-square matrices
     non_kinship <- matrix(1:2, nrow=2)
+    expect_error( validate_kinship( non_kinship ) )
+    
+    # and non-symmetric matrices
+    non_kinship <- matrix(1:4, nrow=2)
     expect_error( validate_kinship( non_kinship ) )
 })
 
@@ -106,6 +110,24 @@ test_that("solve_m_mem_lim works", {
     solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, mat_n_n = 1)
     solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, vec_n = 1)
     solve_m_mem_lim_TESTER(mat_m_n = 1, vec_m = 1, vec_n = 1, mat_n_n = 1)
+
+    # test that we now successfully avoid a particularly bad integer overflow error
+    # caused internally by an `n*n` term, so only n has to be huge to cause it
+    # increase memory requested so that doesn't cause problems
+    n <- 50000L # pass as integer!
+    mem <- 32
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, vec_m = 1)
+    solve_m_mem_lim_TESTER(mem = mem, vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, vec_m = 1, vec_n = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_m = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_m = 1, mat_n_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_m = 1, vec_n = 1)
+    solve_m_mem_lim_TESTER(mem = mem, mat_m_n = 1, vec_m = 1, vec_n = 1, mat_n_n = 1)
 })
 
 test_that("function returns precomputed values: weights_subpops", {
@@ -123,30 +145,90 @@ test_that("function returns precomputed values: weights_subpops", {
     expect_true(all(w < 1))
 })
 
-test_that("function returns precomputed values: get_A", {
-    expect_equal(get_A(X), A)
-    expect_equal(get_A(X+0), A) # turns numeric
-    expect_equal(get_A(2L-X), A)
-    expect_equal(get_A(2-X), A) # numeric version again
+test_that("function returns precomputed values: popkin_A", {
+    # standard test (X is integer)
+    expect_silent( obj <- popkin_A( X ) )
+    expect_equal( obj$A, A )
+    expect_equal( obj$M, M )
+    
+    # turns X into doubles
+    expect_silent( obj <- popkin_A( X + 0 ) )
+    expect_equal( obj$A, A )
+    expect_equal( obj$M, M )
+
+    # reflect, keep X integer
+    expect_silent( obj <- popkin_A( 2L - X ) )
+    expect_equal( obj$A, A )
+    expect_equal( obj$M, M )
+
+    # reflect and turn X doubles too
+    expect_silent( obj <- popkin_A( 2 - X ) )
+    expect_equal( obj$A, A )
+    expect_equal( obj$M, M )
+
+    # make sure that non-default m_chunk_max version works
+    # this tests the edge case `m_chunk_max = 1` in particular
+    expect_silent( obj <- popkin_A( X, m_chunk_max = 1 ) )
+    expect_equal( obj$A, A )
+    expect_equal( obj$M, M )
+    
+    # these should be square matrices
     expect_equal(nrow(A), ncol(A))
+    expect_equal(nrow(M), ncol(M))
+
+    # M (pairwise sample sizes, so excluding NA pairs) must satisfy obvious range limits
+    expect_true( min(M) >= 0 )
+    expect_true( max(M) <= nrow(X) )
 })
 
-test_that("function returns precomputed values: min_mean_subpops", {
-    expect_equal(min_mean_subpops(A), min(A))
-    expect_equal(min_mean_subpops(A), Amin0)
-    expect_equal(min_mean_subpops(A, subpops0), Amin0)
-    expect_equal(min_mean_subpops(A, subpops), Amin)
+test_that("function returns precomputed values: popkin_A_min_subpops", {
+    # trigger expected errors
+    # missing A
+    expect_error( popkin_A_min_subpops() )
+    # subpops with wrong length
+    expect_error( popkin_A_min_subpops( A, subpops[1:2] ) )
+    # subpops with a single subpop really (but right length)
+    n_ind <- length( subpops )
+    subpops_one <- rep.int( 1, n_ind )
+    expect_error( popkin_A_min_subpops( A, subpops_one ) )
+    # but two subpopulations should be ok
+    n2 <- round( n_ind / 2 )
+    subpops_two <- c( rep.int( 1, n2 ), rep.int( 2, n_ind - n2 ) )
+    expect_silent( popkin_A_min_subpops( A, subpops_two ) )
+    
+    # now positive examples
+    expect_equal(popkin_A_min_subpops(A), min(A))
+    expect_equal(popkin_A_min_subpops(A), Amin0)
+    expect_equal(popkin_A_min_subpops(A, subpops0), Amin0)
+    expect_equal(popkin_A_min_subpops(A, subpops), Amin)
 })
 
 # higher-level tests now!
 
 test_that("function returns precomputed values: popkin", {
+    # cause problems on purpose
+    expect_error( popkin() )
+    
+    # good runs
     expect_equal(popkin(X), Phi0)
     expect_equal(popkin(X, subpops0), Phi0)
     expect_equal(popkin(X, subpops), Phi)
     expect_equal(popkin(X+0, subpops), Phi)
     expect_equal(popkin(2L-X, subpops), Phi)
     expect_equal(popkin(2-X, subpops), Phi)
+
+    # test that non-default m_chunk_max options don't fail
+    expect_equal(popkin(X, subpops, m_chunk_max = 1), Phi)
+    
+    # test want_M in these two cases only
+    # though kinship is scaled differently in each version, M is the same for both
+    expect_silent( obj <- popkin( X, want_M = TRUE ) )
+    expect_equal( obj$kinship, Phi0 )
+    expect_equal( obj$M, M )
+    
+    expect_silent( obj <- popkin( X, subpops, want_M = TRUE ) )
+    expect_equal( obj$kinship, Phi )
+    expect_equal( obj$M, M )
 })
 
 test_that("popkin preserves names of individuals", {
@@ -174,6 +256,41 @@ test_that("function returns precomputed values: fst", {
     expect_true(fst >= 0)
     expect_true(fstW <= 1)
     expect_true(fst <= 1)
+})
+
+test_that("fst with local inbreeding works", {
+    # construct a random fake local kinship matrix
+    n_ind <- nrow(Phi)
+    kinship_local <- matrix(
+        runif( n_ind * n_ind ),
+        nrow = n_ind,
+        ncol = n_ind
+    )
+    # make pos-def by cross-multiplying with itself
+    # normalize to keep in [0,1]
+    kinship_local <- crossprod( kinship_local ) / n_ind
+    # now create "total matrix" by combining effects
+    # however, do this in coancestry mode (inbr diag)
+    # - kinship_local has not been transformed yet so only Phi needs this
+    kinship_total <- inbr_diag(Phi) + kinship_local - inbr_diag(Phi) * kinship_local
+    # turn both local and total into proper kinship by altering diagonal
+    diag( kinship_local ) <- ( 1 + diag( kinship_local ) ) / 2
+    diag( kinship_total ) <- ( 1 + diag( kinship_total ) ) / 2
+    # now estimate FST
+    # correcting appropriately in all cases should result in the same FST as before...
+    expect_equal(fst(kinship_total, x_local = kinship_local), fst)
+    expect_equal(fst(kinship_total, x_local = kinship_local, w0), fst)
+    expect_equal(fst(kinship_total, x_local = kinship_local, w), fstW)
+    # test vector versions of both, and each separately
+    expect_equal(fst(inbr(kinship_total), x_local = kinship_local), fst)
+    expect_equal(fst(inbr(kinship_total), x_local = kinship_local, w0), fst)
+    expect_equal(fst(inbr(kinship_total), x_local = kinship_local, w), fstW)
+    expect_equal(fst(inbr(kinship_total), x_local = inbr(kinship_local)), fst)
+    expect_equal(fst(inbr(kinship_total), x_local = inbr(kinship_local), w0), fst)
+    expect_equal(fst(inbr(kinship_total), x_local = inbr(kinship_local), w), fstW)
+    expect_equal(fst(kinship_total, x_local = inbr(kinship_local)), fst)
+    expect_equal(fst(kinship_total, x_local = inbr(kinship_local), w0), fst)
+    expect_equal(fst(kinship_total, x_local = inbr(kinship_local), w), fstW)
 })
 
 test_that("function returns precomputed values: inbr", {

@@ -4,16 +4,21 @@
 \alias{validate_kinship}
 \title{Validate a kinship matrix}
 \usage{
-validate_kinship(kinship)
+validate_kinship(kinship, sym = TRUE, name = "kinship")
 }
 \arguments{
 \item{kinship}{The kinship matrix to validate.}
+
+\item{sym}{If \code{TRUE} (default), the matrix is required to be symmetric.  Otherwise this particular test is skipped.}
+
+\item{name}{Default "kinship".
+Change to desired variable name for more informative error messages (i.e. "A" when used to validate the \code{A} matrix inside \code{popkin_A_min_subpops}).}
 }
 \value{
 Nothing
 }
 \description{
-Tests that the input is a valid kinship matrix (a numeric square R matrix).
+Tests that the input is a valid kinship matrix (a numeric, square, symmetric R matrix).
 Throws errors if the input is not as above.
 }
 \details{
@@ -42,5 +47,11 @@ try( validate_kinship( char_mat ) )
 # and non-square matrices
 non_kinship <- matrix(1:2, nrow=2)
 try( validate_kinship( non_kinship ) )
+
+# and non-symmetric matrices
+non_kinship <- matrix(1:4, nrow=2)
+try( validate_kinship( non_kinship ) )
+# but example passes if we drop symmetry requirement this way
+validate_kinship( non_kinship, sym = FALSE )
 
 }

@@ -200,3 +200,44 @@ More improvements to function `plot_popkin`:
 * Added `calc_leg_width_min` internal function, though it is unfinished and unused.
 * Moved logo to `man/figures/`
 * Minor Roxygen-related updates.
+
+# 2020-02-18 - popkin 1.3.1.9000
+
+* Added `x_local` parameter to function `fst`, which permits estimation of FST when there is known local inbreeding (estimated from a pedigree or IBD blocks).
+
+# 2020-06-19 - popkin 1.3.2.9000
+
+* `validate_kinship` now tests for symmetry in input kinship matrices too.
+
+# 2020-07-13 - popkin 1.3.3.9000
+
+* Internal (non-exported) function `solve_m_mem_lim` now avoids a rare integer overflow caused when input number of individuals `n` was encoded as an integer and was greater than `sqrt(.Machine$integer.max)`, or 46340.95.
+
+# 2020-07-23 - popkin 1.3.4.9000
+
+* `validate_kinship` now has `sym` option that, if `FALSE`, skips symmetry test (defaults to `TRUE`).
+* `plot_popkin` has the same `sym` option passed to `validate_kinship`, but here it defaults to `FALSE` (there is no inherent error caused by plotting non-symmetric matrices).
+
+# 2020-09-24 - popkin 1.3.5.9000
+
+* Function `popkin`
+  - Added `want_M` option, which if `TRUE` returns a list containing the `kinship` matrix as well as the pairwise complete count matrix `M`.
+  - Added `m_chunk_max` option (default 1000), which sets the maximum number of loci to process at the time.
+	The new default behavior reduces memory usage a lot, especially on machines with large memory, without sacrificing speed.
+	Original version would use a lot of memory just because it was available, which could be inconvenient when trying to run other processes, and did not result in increased speed, so it was unnecessary at best.
+  - Minor documentation improvements.
+
+# 2020-11-20 - popkin 1.3.6.9000
+
+* Added exported functions `popkin_A` (used to be unexported `get_A`) and `popkin_A_min_subpops` (used to be unexported `min_mean_subpops`)
+  - These are low-level functions providing intermediate calculations used by the main `popkin` function.
+  - Provided for researchers to try to improve the `popkin` method
+* Function `validate_kinship` added option `name` (default "kinship") for clear error reports when the matrix being tested is not actually a kinship matrix
+  - Internally used with `name = "A"` to validate `A` in `popkin_A_min_subpops`.
+* Simplified documentation (most functions) by using markdown roxygen and replacing all LaTeX equations with simpler code equations.
+
+# 2021-02-09 - popkin 1.3.7
+
+* 5th CRAN submission.
+* Updated paper citations in `DESCRIPTION`, `README.md` and the vignette, to point to the published method in PLoS Genetics, and also a related preprint of human analysis on bioRxiv.
+* Minor spellcheck corrections in documentation.

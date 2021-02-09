@@ -1,6 +1,6 @@
 #' Validate a kinship matrix
 #'
-#' Tests that the input is a valid kinship matrix (a numeric square R matrix).
+#' Tests that the input is a valid kinship matrix (a numeric, square, symmetric R matrix).
 #' Throws errors if the input is not as above.
 #' 
 #' True kinship matrices have values strictly between 0 and 1, and diagonal values strictly between 0.5 and 1.
@@ -8,6 +8,9 @@
 #' For greater flexibility, this function does not check for out-of-range values.
 #'
 #' @param kinship The kinship matrix to validate.
+#' @param sym If `TRUE` (default), the matrix is required to be symmetric.  Otherwise this particular test is skipped.
+#' @param name Default "kinship".
+#' Change to desired variable name for more informative error messages (i.e. "A" when used to validate the `A` matrix inside `popkin_A_min_subpops`).
 #'
 #' @return Nothing
 #'
@@ -33,20 +36,29 @@
 #' non_kinship <- matrix(1:2, nrow=2)
 #' try( validate_kinship( non_kinship ) )
 #'
+#' # and non-symmetric matrices
+#' non_kinship <- matrix(1:4, nrow=2)
+#' try( validate_kinship( non_kinship ) )
+#' # but example passes if we drop symmetry requirement this way
+#' validate_kinship( non_kinship, sym = FALSE )
+#'
 #' @export
-validate_kinship <- function(kinship) {
+validate_kinship <- function(kinship, sym = TRUE, name = 'kinship') {
     # die if this is missing
-    if (missing(kinship))
-        stop('`kinship` matrix is required!')
+    if ( missing( kinship ) )
+        stop( '`', name, '` matrix is required!' )
     # make sure it is an ordinary matrix or equivalent
-    if (!is.matrix(kinship))
-        stop('`kinship` must be an R matrix!')
+    if ( !is.matrix( kinship ) )
+        stop( '`', name, '` must be an R matrix!' )
     # make sure it is numeric
-    if (!is.numeric(kinship))
-        stop('`kinship` must be numeric!')
+    if ( !is.numeric( kinship ) )
+        stop( '`', name, '` must be numeric!' )
     # check dimensions
-    m <- nrow(kinship)
-    n <- ncol(kinship)
+    m <- nrow( kinship )
+    n <- ncol( kinship )
     if (n != m)
-        stop('`kinship` must be a square matrix!  (nrow ', m, ' != ncol ', n, ')')
+        stop( '`', name, '` must be a square matrix!  (nrow ', m, ' != ncol ', n, ')' )
+    # test symmetry
+    if ( sym && !isSymmetric( kinship ) )
+        stop( '`', name, '` must be a symmetric matrix!' )
 }
