@@ -1,9 +1,9 @@
-eb5bf9c08a747ed1d03ab42140fed01d *DESCRIPTION
+744b17543a81c73e4fb086ad399b1dd6 *DESCRIPTION
 fac5383fe9ab30842dfb59a4454bc0f9 *NAMESPACE
-10384946ce86916bc146e9986f3dd686 *NEWS.md
+6a5eef3850148c8cb3e3644af911576c *NEWS.md
 197df61ce2f9cd8071f9ff7458a4cbb5 *R/RcppExports.R
 317f562cf83bbc8d4925abe136812957 *R/fst.R
-a52b34c007df88c6e45984ace720ba3c *R/get_mem_lim.R
+ee7af40bbb8380474d3e941f50d2842a *R/get_mem_lim.R
 f199888a930ab7d62041013a03a9612a *R/inbr.R
 31671cce7fbbcfb1e39282f734f655c7 *R/inbr_diag.R
 932b8763c4866d27a97d1ce272aae95f *R/mean_kinship.R
@@ -26,7 +26,7 @@ e4ba1ab55bdd831e54da816539afc53c *R/validate_kinship.R
 803b0ec6f046d6d43839fdd69d0f00e1 *inst/CITATION
 e3c22c7cfa7f2614b84dcb174dfa3980 *inst/doc/popkin.R
 8ed3c7aa0796276a58838b036b97616f *inst/doc/popkin.Rmd
-06747048dd350f1831f49a7d83567009 *inst/doc/popkin.html
+5da4d0817479a4385b939360ff5e93b9 *inst/doc/popkin.html
 001085d88caf1b398d88ebd6d7794ae6 *man/figures/logo.png
 0d046e0b3ef662028e14a44d9252e2e1 *man/fst.Rd
 9ee1abe99f81ad054e26bbad8ca2ea78 *man/inbr.Rd
