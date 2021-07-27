@@ -207,3 +207,36 @@ plot_popkin(
     leg_per_panel = TRUE
 	)
 
+## -----------------------------------------------------------------------------
+# number of loci (rows)
+m_loci <- nrow( X )
+# number of subpopulations (columns)
+k_subpops <- length( pop_order )
+# initialize matrix
+P <- matrix( NA, nrow = m_loci, ncol = k_subpops )
+# copy names from data
+colnames( P ) <- pop_order
+rownames( P ) <- rownames( X )
+# navigate subpopulations
+for ( u in 1 : k_subpops ) {
+    # subpopulation label name
+    pop <- pop_order[ u ]
+    # columns of interest
+    js <- subpops == pop
+    # now average genotypes into allele frequency estimates and store
+    P[ , u ] <- rowMeans( X[ , js ], na.rm = TRUE ) / 2
+}
+
+## -----------------------------------------------------------------------------
+coancestry <- popkin_af( P )
+
+## ---- fig.width = 4.2, fig.height = 3, fig.align = 'center'-------------------
+# coancestry matrix plot
+# NOTE: inbr_diag() is not needed for coancestry!
+plot_popkin(
+    coancestry,
+    mar = 3,
+    names = TRUE,
+    ylab = 'Subpopulations'
+)
+
