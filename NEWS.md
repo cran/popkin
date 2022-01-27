@@ -294,3 +294,37 @@ Overall added tree plotting capabilities and more plotting fine control.
 - Removed "LazyData: true" from DESCRIPTION (to avoid a new "NOTE" on CRAN).
 - Reformatted this `NEWS.md` slightly to improve its automatic parsing.
 - Fixed spelling in documentation.
+
+# popkin 1.3.13.9000 (2021-11-02)
+
+- Added function `avg_kinship_subpops`.
+- Function `popkin_A_min_subpops`:
+  - Now uses `avg_kinship_subpops` internally to perform the bulk of the calculations
+  - When `subpops = NULL`, calculation now returns minimum `A` among off-diagonal elements only (excluding diagonal) rather than the overall minimum of `A`.  There's no difference when `A` is calculated from genotypes (diagonal values are much greater than off-diagonal values), but made the change for consistency when it might differ for arbitrary inputs.
+- `README` updated github install instructions for building vignettes.
+
+# popkin 1.3.14.9000 (2021-11-05)
+
+- Function `plot_popkin` fixed a bug when `null_panel_data = TRUE` in which titles that went over panels with `NULL` kinship were incorrectly omitted.
+
+# popkin 1.3.15.9000 (2021-12-02)
+
+- Improved estimation of available memory on linux, fixing a bug where popkin incorrectly believes there is not enough memory.
+  - Old: retrieved `MemFree` (from `/proc/meminfo`).  This could underestimate available memory when `Buffers` and `Cached` memory are large (these count as available memory!), and in some cases cause this error:
+    ```
+    Error in solve_m_mem_lim : 
+    The resulting `m_chunk` was negative!  This is because either `mat_n_n` or `vec_n` are non-zero and `n` alone is too large for the available memory (even for `m_chunk == 0`).  The solution is to free more memory (ideal) or to reduce `n` if possible.
+    ```
+  - New: retrieve `MemAvailable` (still from `/proc/meminfo`), which is ideal but is absent in older linux kernels (<3.14), otherwise fallback into retrieving and returning the sum of `MemFree`, `Buffers`, and `Cached`.  Either way available memory is greater than `MemFree` alone and is also more accurate.
+  - Under the hood, cleaned parser considerably and check for several trouble scenarios that were previously taken for granted.
+
+# popkin 1.3.16.9000 (2022-01-15)
+
+- Added function `plot_admix` for making admixture/structure plots with most of the same options as `plot_popkin`!
+  - Includes plotting examples in vignette.
+  - Cleaned up and extended internal function `print_labels_multi`, `print_labels`.
+
+# popkin 1.3.17 (2022-01-26)
+
+- 8th CRAN submission.
+- Fixed some typos.

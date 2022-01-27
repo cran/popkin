@@ -281,6 +281,94 @@ test_that("function returns precomputed values: popkin_A", {
     expect_true( max(M) <= nrow(X) )
 })
 
+test_that("function returns precomputed values: inbr", {
+    expect_equal(inbr(Phi), inbr)
+})
+
+test_that("inbr_diag works", {
+    # dies when kinship matrix is missing
+    expect_error( inbr_diag() )
+    # make sure precomputed values match
+    expect_equal( inbr_diag(Phi), PhiInbr )
+    # test list version (just duplicates things)
+    expect_equal( inbr_diag(list(Phi, Phi)), list(PhiInbr, PhiInbr) )
+})
+
+test_that( "avg_kinship_subpops works on toy data", {
+    # note: tests on other data appear through its reverse dependencies: popkin_A_min_subpops, popkin
+
+    # this is toy data
+    kinship <- matrix(
+        c(
+            0.7, 0.4, 0.4, 0.1, 0.0,
+            0.4, 0.7, 0.4, 0.2, 0.1,
+            0.4, 0.4, 0.7, 0.2, 0.0,
+            0.1, 0.2, 0.2, 0.6, 0.2,
+            0.0, 0.1, 0.0, 0.2, 0.6
+        ),
+        nrow = 5,
+        ncol = 5
+    )
+    subpops <- c(1, 1, 1, 2, 2)
+    
+    # calculate mean kinship between (and within) subpopulations
+    expect_silent(
+        kinship2 <- avg_kinship_subpops( kinship, subpops )
+    )
+    # this is expected output
+    a <- 0.5 # mean( kinship[ 1:3, 1:3 ] )
+    b <- 0.1 # mean( kinship[ 4:5, 1:3 ] )
+    c <- 0.4 # mean( kinship[ 4:5, 4:5 ] )
+    kinship2_exp <- matrix(
+        c(
+            a, b,
+            b, c
+        ),
+        nrow = 2,
+        ncol = 2,
+        dimnames = list( 1:2, 1:2 )
+    )
+    expect_equal( kinship2, kinship2_exp )
+    
+    # calculate coancestry estimate instead (difference is diagonal)
+    coanc <- inbr_diag( kinship )
+    expect_silent(
+        kinship2 <- avg_kinship_subpops( coanc, subpops )
+    )
+    # small edit to expectation
+    kinship2_exp[ 1, 1 ] <- 0.4
+    kinship2_exp[ 2, 2 ] <- 0.2
+    expect_equal( kinship2, kinship2_exp )
+
+    # need to test data consistency checks
+    # stick with last example
+    # length of subpops is wrong
+    expect_error( avg_kinship_subpops( coanc, 1:3 ) )
+    expect_error( avg_kinship_subpops( coanc, 1:10 ) )
+    
+    # this works and returns same output
+    expect_silent(
+        kinship2 <- avg_kinship_subpops( coanc, subpops, subpop_order = 1:2 )
+    )
+    expect_equal( kinship2, kinship2_exp )
+    # ditto, inserted extra subpops that are silently ignored
+    expect_silent(
+        kinship2 <- avg_kinship_subpops( coanc, subpops, subpop_order = c(1, 3, 2) ) # 3 is ignored
+    )
+    expect_equal( kinship2, kinship2_exp )
+
+    # works but output is reversed
+    expect_silent(
+        kinship2 <- avg_kinship_subpops( coanc, subpops, subpop_order = 2:1 )
+    )
+    expect_equal( kinship2, kinship2_exp[ 2:1, 2:1 ] )
+
+    # error if subpop_order is missing subpops
+    expect_error(
+        avg_kinship_subpops( coanc, subpops, subpop_order = c(1, 3) ) # 2 is missing
+    )
+})
+
 test_that("function returns precomputed values: popkin_A_min_subpops", {
     # trigger expected errors
     # missing A
@@ -393,25 +481,12 @@ test_that("fst with local inbreeding works", {
     expect_equal(fst(kinship_total, x_local = inbr(kinship_local), w), fstW)
 })
 
-test_that("function returns precomputed values: inbr", {
-    expect_equal(inbr(Phi), inbr)
-})
-
 test_that("function returns precomputed values: pwfst", {
     expect_equal(pwfst(Phi), pwF)
     expect_equal(pwfst(Phi0), pwF)
     expect_equivalent(diag(pwF), rep.int(0, nrow(pwF))) # test that diagonal is zero ("equivalent" ignores label mismatches)
     expect_true(max(pwF) <= 1)
     # note estimates may be slightly negative though
-})
-
-test_that("inbr_diag works", {
-    # dies when kinship matrix is missing
-    expect_error( inbr_diag() )
-    # make sure precomputed values match
-    expect_equal( inbr_diag(Phi), PhiInbr )
-    # test list version (just duplicates things)
-    expect_equal( inbr_diag(list(Phi, Phi)), list(PhiInbr, PhiInbr) )
 })
 
 test_that("mean_kinship works", {
@@ -624,6 +699,72 @@ test_that("plot_popkin works", {
     invisible( file.remove(fo) )
     
 })
+
+test_that("plot_admix works", {
+    # set up a temporary path to write to
+    fo <- tempfile('test-plot-admix', fileext = '.pdf')
+
+    # same example from vignette
+    # some subpopulation sizes
+    n1 <- 10
+    n2 <- n1
+    n3 <- 20
+    # construct unadmixed individuals
+    Q_pop1 <- matrix( c( 1, 0 ), ncol = 2, nrow = n1, byrow = TRUE )
+    Q_pop2 <- Q_pop1[ , 2:1 ] # reverse columns
+    # random admixture proportions
+    Q_admix <- rev( sort( runif( n3 ) ) )
+    Q_admix <- cbind( Q_admix, 1 - Q_admix )
+    # combine data for all populations
+    # add some informative row/col names too
+    rownames( Q_pop1 ) <- paste0( 'S1-ind', 1 : n1 )
+    rownames( Q_pop2 ) <- paste0( 'S2-ind', 1 : n2 )
+    rownames( Q_admix ) <- paste0( 'S3-ind', 1 : n3 )
+    Q <- rbind( Q_pop1, Q_pop2, Q_admix )
+    colnames( Q ) <- c('A1', 'A2')
+    # create subpopulation labels for later
+    labs1 <- c( rep.int( 'S1', n1 ), rep.int( 'S2', n2 ), rep.int( 'S3', n3 ) )
+    labs2 <- c( rep.int( 'Unadmixed', n1+n2 ), rep.int( 'Admixed', n3 ) )
+
+    # no labels/names
+    pdf( fo )
+    par(mar = c(1, 3, 1, 0.2) + 0.2)
+    expect_silent(
+        plot_admix( Q )
+    )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+
+    # names
+    pdf( fo )
+    par(mar = c(6, 3, 1, 0.2) + 0.2)
+    expect_silent( 
+        plot_admix( Q, names = TRUE, xlab_line = 5 )
+    )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+
+    # labels version
+    pdf( fo )
+    par(mar = c(3, 3, 1, 0.2) + 0.2)
+    expect_silent( 
+        plot_admix( Q, labs = labs1, xlab_line = 2 )
+    )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+
+    # labels version, legend omitted
+    pdf( fo )
+    par(mar = c(3, 3, 1, 0.2) + 0.2)
+    expect_silent( 
+        plot_admix( Q, labs = labs1, xlab_line = 2, leg_omit = TRUE )
+    )
+    invisible( dev.off() )
+    invisible( file.remove(fo) )
+
+})
+
+
 
 #################
 ### popkin_af ###
