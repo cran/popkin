@@ -4,19 +4,8 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ---- cache = FALSE, include = FALSE------------------------------------------
-## copied from examples from the "simmer" R package
-## after: https://www.enchufa2.es/archives/suggests-and-vignettes.html
-## by Iñaki Úcar
-required <- c("lfa") # not a CRAN package, only suggested since popkin doesn't need it to run...
-
-if (!all(sapply(required, requireNamespace, quietly = TRUE)))
-  knitr::opts_chunk$set(eval = FALSE)
-
 ## -----------------------------------------------------------------------------
 library(popkin)
-# for hgdp_subset sample data only
-library(lfa)
 # rename for simplicity
 X <- hgdp_subset
 dim(X)

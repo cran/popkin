@@ -15,7 +15,7 @@
 #' `function` elements are executed without arguments, and are expected to produce single arbitrary plot panels.
 #' @param titles Titles to add to each matrix panel (default is no titles).
 #' Applied to kinship and phylo panels only.
-#' @param col Colors for kinship heatmap (default is a red-white-blue palette symmetric about zero constructed using RColorBrewer).
+#' @param col Colors for kinship heatmap (default is a red-white-blue palette symmetric about zero constructed using `RColorBrewer`).
 #' @param col_n The number of colors to use in the heatmap (applies if `col = NULL`).
 #' @param mar Margins shared by all panels (if a vector) or for each panel (if a list of such vectors).
 #' If the vector has length 1, `mar` corresponds to the shared lower and left margins, while the top and right margins are set to zero.
@@ -36,6 +36,7 @@
 #' `mar_pad` above is never added to outer margins.
 #' If `NULL`, no outer margins are set (previous settings are preserved).
 #' Vectors of invalid lengths produce a warning.
+#' Note: if `layout_add = FALSE`, this function still (re)sets the outer margins if `oma` is not `NULL`, which can be convenient if `plot_popkin` generates the first few panels, but otherwise a partial multipanel figure will be reset unless `oma = NULL` is also set!
 #' @param diag_line If `TRUE` adds a line along the kinship diagonal (default no line).
 #' May also be a vector of logicals to set per panel (lengths must agree).
 #' Has no effect on non-kinship panels.
@@ -74,12 +75,14 @@
 #' If `length(ylab) == 1`, only the first value is used, otherwise `length(ylab_line)` must equal the number of panels.
 #' @param ylab_side The value of `side` for `ylab` passed to [graphics::mtext()] (2 is y-axis, 1 is x-axis, can also place on top (3) or right (4)).
 #' If `length(ylab) == 1`, only the first value is used, otherwise `length(ylab_side)` must equal the number of panels.
+#' @param ylab_per_panel Forces y-axis labels to appear for each panel, in the inner margins.
+#' Most useful to cover the case where there is a single panel but no outer margins (`oma = NULL`).
 #' 
 #' LAYOUT OPTIONS
 #' 
 #' @param layout_add If `TRUE` (default) then [graphics::layout()] is called internally with appropriate values for the required number of panels for each matrix, the desired number of rows (see `layout_rows` below) plus the color key legend.
-#' The original layout is reset when plotting is complete and if `layout_add = TRUE`.
-#' If a non-standard layout or additional panels (beyond those provided by `plot_popkin`) are desired, set to `FALSE` and call [graphics::layout()] yourself beforehand.
+#' The original layout is reset when plotting is complete if `layout_add = TRUE`.
+#' If a non-standard layout or additional panels (beyond those provided by `plot_popkin`) are desired, set to `FALSE` and call [graphics::layout()] yourself beforehand; in this case you may want to set `oma = NULL` (above) as well!
 #' @param layout_rows Number of rows in layout, used only if `layout_add = TRUE`.
 #'
 #' LEGEND (COLOR KEY) OPTIONS
@@ -111,7 +114,7 @@
 #' SUBPOPULATION LABEL OPTIONS
 #' 
 #' @param labs Subpopulation labels for individuals in kinship matrices.
-#' Use a matrix of labels to show groupings at more than one level (for a hierarchy or otherwise).
+#' Use a matrix of labels (individuals along rows, levels along columns) to show groupings at more than one level (for a hierarchy or otherwise).
 #' If input is a vector or a matrix, the same subpopulation labels are shown for every kinship matrix; the input must be a list of such vectors or matrices if the labels vary per panel.
 #' Has no effect on non-kinship panels.
 #' @param labs_cex A vector of label scaling factors for each level of labs, or a list of such vectors if labels vary per panel.
@@ -165,6 +168,7 @@ plot_popkin <- function(
                         ylab_adj = NA,
                         ylab_line = 0,
                         ylab_side = 2,
+                        ylab_per_panel = FALSE,
                         layout_add = TRUE,
                         layout_rows = 1, 
                         leg_per_panel = FALSE,
@@ -442,9 +446,9 @@ plot_popkin <- function(
         if (!is.null(breaks_i))
             breaks <- breaks_i
         
-        # add ylab for every panel when there is more than one choice, and provided it was non-NA
+        # add ylab for every panel when there is more than one choice, or if overridden, and provided it was non-NA
         # uses inner rather than outer margin (only choice that makes sense)
-        if ( length(ylab) > 1 && !is.na( ylab[i] ) ) 
+        if ( ( ylab_per_panel || length(ylab) > 1 ) && !is.na( ylab[i] ) ) 
             graphics::mtext( ylab[i], side = ylab_side[i], adj = ylab_adj[i], line = ylab_line[i] )
         
         # add letters only when ...
@@ -494,8 +498,8 @@ plot_popkin <- function(
         )
     }
 
-    # add margin only once if there was only one, place in outer margin (only choice that makes sense)
-    if ( length(ylab) == 1 )
+    # add margin only once if there was only one, and not overridden, place in outer margin (only choice that makes sense)
+    if ( !ylab_per_panel && length(ylab) == 1 )
         graphics::mtext( ylab, side = ylab_side, adj = ylab_adj, outer = TRUE, line = ylab_line )
 
     # restore original setup when done, but only if we created the default layout
@@ -749,7 +753,7 @@ rep_check_list <- function(vals, n) {
 #
 # @param breaks The vector of `n+1` values at which colors switch, as returned by [plot_popkin_single()]
 # @param label The name of the variable that the colors measure (i.e. "Kinship")
-# @param col Color vector of length `n`.  Default colors are a progression from blue to white to red obtained from RColorBrewer.
+# @param col Color vector of length `n`.  Default colors are a progression from blue to white to red obtained from `RColorBrewer`.
 # @param kinship_range Range of the color key, preferably the range of the data (default is infered from the breaks, but they need not agree)
 # @param leg_n The desired number of ticks in the y-axis (input to [pretty()], see that for more details)
 #
@@ -1200,11 +1204,11 @@ print_labels <- function(
         # hard case
 
         # even sequence of boundaries: length n+1
-        xb_grp2 <- xb_min + ( 0 : n_grp ) / n_grp * xb_max
+        xb_grp2 <- xb_min + ( 0 : n_grp ) / n_grp * ( xb_max - xb_min )
         # even centers calculated from the even boundaries
         # this is where the labels will be placed at the end
         xc_grp <- centers_from_boundaries( xb_grp2 )
-            
+        
         # connect label boundaries to irregular boundaries in plot
         ysLines <- line_to_user( c(0, line), 1 ) # shared by every label boundary on x-axis
         xsLines <- line_to_user( c(0, line), 2 ) # shared by every label boundary on y-axis
